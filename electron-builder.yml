@@ -1,7 +1,6 @@
 appId: com.jicai.app
 productName: 记财
 copyright: Copyright © 2026 jicai
-publisherName: 记财
 
 directories:
   output: dist-electron

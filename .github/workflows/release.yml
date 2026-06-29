@@ -13,6 +13,7 @@ jobs:
     name: Build and Release
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -69,10 +70,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts to Release
+      - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
           files: dist-electron/*
-          generate_release_notes: true
+          body: |
+            ## 🪟 Windows
+            下载 **JiCai-Setup-x.x.x.exe**，双击安装。
+            > 如提示"已保护你的电脑"，点击「更多信息」→「仍要运行」
+
+            ## 🍎 macOS
+            下载 **JiCai-x.x.x.dmg**，拖入 Applications。
+            > 首次打开如提示"无法验证"，前往 系统设置 → 隐私与安全性 → 仍要打开
+
+            ## 🐧 Linux
+            下载 **JiCai-x.x.x.AppImage**，`chmod +x` 后运行。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -51,7 +51,7 @@ jobs:
 
       - name: Un-ignore dist/ for electron-builder
         shell: bash
-        run: sed -i '/^dist\//d' .gitignore
+        run: sed -i.bak '/^dist\//d' .gitignore && rm -f .gitignore.bak
 
       - name: Build Electron (Windows)
         if: runner.os == 'Windows'

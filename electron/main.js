@@ -21,6 +21,7 @@ function createWindow() {
             preload: path_1.default.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
+            webSecurity: false, // file:// 协议需要关闭 CORS 才能加载 type=module 的 JS
         },
     });
     // 外部链接用默认浏览器打开

@@ -1,7 +1,7 @@
 {
-  "name": "salary-calculator",
-  "version": "0.1.0",
-  "description": "工资计算器 - 跨平台桌面应用",
+  "name": "jicai",
+  "version": "0.2.0",
+  "description": "记财 - 工资计算器，跨平台桌面应用",
   "author": "xiangxuceng0-gif",
   "main": "electron/main.js",
   "private": true,

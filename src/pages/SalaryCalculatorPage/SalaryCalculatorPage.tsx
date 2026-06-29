@@ -155,13 +155,13 @@ export default function SalaryCalculatorPage() {
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b-2 border-border pb-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
-              SALARY CALCULATOR
+              JiCai · Salary Calculator
             </p>
-            <h1 className="text-[clamp(2rem,8vw,5rem)] font-bold leading-[0.9] tracking-tighter uppercase">
-              工资计算器
+            <h1 className="text-[clamp(2rem,8vw,5rem)] font-bold leading-[0.9] tracking-tighter">
+              记财
             </h1>
             <p className="text-sm text-muted-foreground mt-2 uppercase tracking-widest">
-              5天8小时 · 早八晚五 · 周六固定加班
+              记好每一笔 · 5天8小时 · 早八晚五 · 周六固定加班
             </p>
           </div>
 

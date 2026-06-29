@@ -1,6 +1,7 @@
-appId: com.salarycalculator.app
-productName: 工资计算器
-copyright: Copyright © 2024
+appId: com.jicai.app
+productName: 记财
+copyright: Copyright © 2026 jicai
+publisherName: 记财
 
 directories:
   output: dist-electron
@@ -15,7 +16,7 @@ win:
   target:
     - target: nsis
       arch: [x64]
-  artifactName: ${productName}-Setup-${version}.${ext}
+  artifactName: JiCai-Setup-${version}.${ext}
 
 nsis:
   oneClick: false
@@ -27,13 +28,14 @@ mac:
   target:
     - target: dmg
       arch: [x64, arm64]
-  artifactName: ${productName}-${version}.${ext}
+  artifactName: JiCai-${version}.${ext}
   category: public.app-category.finance
 
 linux:
   target:
     - target: AppImage
       arch: [x64]
+  artifactName: JiCai-${version}.${ext}
   category: Finance
 
 publish:

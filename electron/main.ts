@@ -13,7 +13,7 @@ function createWindow() {
     height: 860,
     minWidth: 800,
     minHeight: 600,
-    title: '工资计算器',
+    title: '记财',
     icon: path.join(__dirname, '../public/icons.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -46,7 +46,7 @@ function createWindow() {
 // 菜单栏
 const menuTemplate: Electron.MenuItemConstructorOptions[] = [
   {
-    label: '工资计算器',
+    label: '记财',
     submenu: [
       { role: 'about' as const },
       { type: 'separator' as const },

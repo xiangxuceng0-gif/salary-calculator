@@ -27,6 +27,7 @@ jobs:
         run: npx vite build --base=./
 
       - name: Compile Electron TypeScript
+        shell: bash
         run: |
           cat > tsconfig.electron.json << 'TSEOF'
           {
@@ -46,15 +47,24 @@ jobs:
 
       - name: Build Electron (Windows)
         if: runner.os == 'Windows'
-        run: npx electron-builder --win --config electron-builder.yml
+        shell: bash
+        run: npx electron-builder --win --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Electron (macOS)
         if: runner.os == 'macOS'
-        run: npx electron-builder --mac --config electron-builder.yml
+        shell: bash
+        run: npx electron-builder --mac --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Electron (Linux)
         if: runner.os == 'Linux'
-        run: npx electron-builder --linux --config electron-builder.yml
+        shell: bash
+        run: npx electron-builder --linux --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts to Release
         uses: softprops/action-gh-release@v1

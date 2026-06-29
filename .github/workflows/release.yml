@@ -1,0 +1,65 @@
+name: Build & Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite web app
+        run: npx vite build --base=./
+
+      - name: Compile Electron TypeScript
+        run: |
+          cat > tsconfig.electron.json << 'TSEOF'
+          {
+            "compilerOptions": {
+              "target": "ES2023",
+              "module": "commonjs",
+              "moduleResolution": "node",
+              "esModuleInterop": true,
+              "skipLibCheck": true,
+              "strict": false,
+              "noEmit": false
+            },
+            "include": ["electron/main.ts", "electron/preload.ts", "electron/updater.ts"]
+          }
+          TSEOF
+          npx tsc -p tsconfig.electron.json
+
+      - name: Build Electron (Windows)
+        if: runner.os == 'Windows'
+        run: npx electron-builder --win --config electron-builder.yml
+
+      - name: Build Electron (macOS)
+        if: runner.os == 'macOS'
+        run: npx electron-builder --mac --config electron-builder.yml
+
+      - name: Build Electron (Linux)
+        if: runner.os == 'Linux'
+        run: npx electron-builder --linux --config electron-builder.yml
+
+      - name: Upload artifacts to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist-electron/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

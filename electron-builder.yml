@@ -38,5 +38,5 @@ linux:
 
 publish:
   provider: github
-  owner: xuceng0-gif
+  owner: xiangxuceng0-gif
   repo: salary-calculator

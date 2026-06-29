@@ -15,7 +15,7 @@ function createWindow() {
         height: 860,
         minWidth: 800,
         minHeight: 600,
-        title: '工资计算器',
+        title: '记财',
         icon: path_1.default.join(__dirname, '../public/icons.svg'),
         webPreferences: {
             preload: path_1.default.join(__dirname, 'preload.js'),
@@ -45,7 +45,7 @@ function createWindow() {
 // 菜单栏
 const menuTemplate = [
     {
-        label: '工资计算器',
+        label: '记财',
         submenu: [
             { role: 'about' },
             { type: 'separator' },

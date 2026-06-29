@@ -1,6 +1,6 @@
 {
   "name": "jicai",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "记财 - 工资计算器，跨平台桌面应用",
   "author": "xiangxuceng0-gif",
   "main": "electron/main.js",

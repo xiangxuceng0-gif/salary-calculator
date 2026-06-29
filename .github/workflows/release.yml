@@ -49,6 +49,10 @@ jobs:
           TSEOF
           npx tsc -p tsconfig.electron.json
 
+      - name: Un-ignore dist/ for electron-builder
+        shell: bash
+        run: sed -i '/^dist\//d' .gitignore
+
       - name: Build Electron (Windows)
         if: runner.os == 'Windows'
         shell: bash

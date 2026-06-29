@@ -8,7 +8,7 @@ directories:
 
 files:
   - dist/**/*
-  - electron/**/*.js
+  - electron/**/*
   - package.json
 
 win:

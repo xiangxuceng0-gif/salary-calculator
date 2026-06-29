@@ -8,3 +8,5 @@ logs/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+tsconfig.electron.json
+*.exe

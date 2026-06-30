@@ -1,6 +1,17 @@
-// EXPORTS: ISalarySettings, IWorkRecord, ILeaveRecord, DEFAULT_SETTINGS, loadSettings, saveSettings, loadRecords, saveRecords, loadLeaveRecords, saveLeaveRecords, isWeekend, getMonthLabel, getMonthKey, getWeekdayLabel, calcBreakDeductionMinutes, calcDailySalary, countWorkdayAttendance
+import { Lunar, HolidayUtil } from 'lunar-javascript';
+
+// ========== TYPES ==========
+
+export type WorkMode = 'standard' | 'flex' | 'piecework';
+
+export const WORK_MODE_LABELS: Record<WorkMode, string> = {
+  standard: '标准模式（5天8小时）',
+  flex: '综合工时制',
+  piecework: '计件模式',
+};
 
 export interface ISalarySettings {
+  workMode: WorkMode;
   baseSalary: number;
   weekdayOvertimeRate: number;
   weekendOvertimeRate: number;
@@ -42,7 +53,16 @@ export interface ILeaveRecord {
   deductionAmount: number;
 }
 
+export interface ILeaveBreakdown {
+  type: string;
+  days: number;
+  amount: number;
+}
+
+// ========== DEFAULTS ==========
+
 export const DEFAULT_SETTINGS: ISalarySettings = {
+  workMode: 'standard',
   baseSalary: 4000,
   weekdayOvertimeRate: 22.7,
   weekendOvertimeRate: 28.4,
@@ -61,6 +81,8 @@ export const DEFAULT_SETTINGS: ISalarySettings = {
   housingFundAmount: 0,
 };
 
+// ========== WEEKDAY ==========
+
 const WEEKDAY_LABELS: Record<number, string> = {
   0: '周日', 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六',
 };
@@ -76,6 +98,8 @@ export function getWeekdayLabel(dateStr: string): string {
   return WEEKDAY_LABELS[d.getDay()] ?? '';
 }
 
+// ========== MONTH ==========
+
 export function getMonthKey(dateStr: string): string {
   return dateStr.slice(0, 7);
 }
@@ -84,6 +108,8 @@ export function getMonthLabel(monthKey: string): string {
   const [y, m] = monthKey.split('-');
   return `${y}年${parseInt(m, 10)}月`;
 }
+
+// ========== SALARY CALC ==========
 
 export function calcDailySalary(baseSalary: number, standardDays: number): number {
   if (standardDays <= 0) return 0;
@@ -101,6 +127,8 @@ export function countWorkdayAttendance(records: IWorkRecord[], monthKey?: string
   return dateSet.size;
 }
 
+// ========== BREAK DEDUCTION ==========
+
 export function calcBreakDeductionMinutes(
   startTime: string,
   endTime: string,
@@ -111,25 +139,91 @@ export function calcBreakDeductionMinutes(
   const [eh, em] = endTime.split(':').map(Number);
   const [bh, bm] = breakStart.split(':').map(Number);
   const [bEh, bEm] = breakEnd.split(':').map(Number);
-
   const workStart = sh * 60 + sm;
   const workEnd = eh * 60 + em;
   const breakStartMin = bh * 60 + bm;
   const breakEndMin = bEh * 60 + bEm;
-
   if (workEnd <= workStart) return 0;
   if (breakStartMin >= breakEndMin) return 0;
-
   const overlapStart = Math.max(workStart, breakStartMin);
   const overlapEnd = Math.min(workEnd, breakEndMin);
-
   if (overlapStart >= overlapEnd) return 0;
   return overlapEnd - overlapStart;
 }
 
-const SETTINGS_KEY = '__salary_calculator_settings_v5';
-const RECORDS_KEY = '__salary_calculator_records_v5';
-const LEAVE_KEY = '__salary_calculator_leave_v5';
+// ========== LUNAR + HOLIDAY ==========
+
+export function getLunarDate(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const lunar = Lunar.fromYmd(y, m, d);
+    return lunar.getDayInChinese();
+  } catch { return ''; }
+}
+
+export function getLunarMonthDay(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const lunar = Lunar.fromYmd(y, m, d);
+    const month = lunar.getMonthInChinese();
+    const day = lunar.getDayInChinese();
+    return `${month}${day}`;
+  } catch { return ''; }
+}
+
+export function isChineseHoliday(dateStr: string): string | null {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const holiday = HolidayUtil.getHoliday(y, m, d);
+    if (holiday) return holiday.getName();
+    // 调休工作日不算节假日
+    return null;
+  } catch { return null; }
+}
+
+// ========== DATE FORMAT ==========
+
+export function formatDateDisplay(dateStr: string): string {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${y}年${parseInt(m, 10)}月${parseInt(d, 10)}日`;
+}
+
+export function parseDateInput(input: string): string | null {
+  // 支持格式: 2026年12月19日、2026-12-19、2026/12/19
+  const match = input.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (!match) return null;
+  const y = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  const d = parseInt(match[3], 10);
+  if (y < 2020 || y > 2099) return null;
+  if (m < 1 || m > 12) return null;
+  if (d < 1 || d > 31) return null;
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+// ========== LEAVE BREAKDOWN ==========
+
+export function calcLeaveBreakdown(leaveRecords: ILeaveRecord[]): ILeaveBreakdown[] {
+  const map = new Map<string, { days: number; amount: number }>();
+  for (const l of leaveRecords) {
+    const entry = map.get(l.type) || { days: 0, amount: 0 };
+    entry.days = Math.round((entry.days + l.days) * 100) / 100;
+    entry.amount = Math.round((entry.amount + l.deductionAmount) * 100) / 100;
+    map.set(l.type, entry);
+  }
+  return Array.from(map.entries()).map(([type, val]) => ({
+    type,
+    days: val.days,
+    amount: val.amount,
+  }));
+}
+
+// ========== STORAGE ==========
+
+const SETTINGS_KEY = '__salary_calculator_settings_v6';
+const RECORDS_KEY = '__salary_calculator_records_v6';
+const LEAVE_KEY = '__salary_calculator_leave_v6';
 
 export function loadSettings(): ISalarySettings {
   try {
@@ -137,6 +231,16 @@ export function loadSettings(): ISalarySettings {
     if (raw) {
       const parsed = JSON.parse(raw);
       return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+  } catch { /* ignore */ }
+  // 兼容旧版数据迁移
+  try {
+    const old = localStorage.getItem('__salary_calculator_settings_v5');
+    if (old) {
+      const parsed = JSON.parse(old);
+      const migrated = { ...DEFAULT_SETTINGS, ...parsed };
+      saveSettings(migrated);
+      return migrated;
     }
   } catch { /* ignore */ }
   return { ...DEFAULT_SETTINGS };
@@ -153,6 +257,15 @@ export function loadRecords(): IWorkRecord[] {
     const raw = localStorage.getItem(RECORDS_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
+  // 兼容旧版
+  try {
+    const old = localStorage.getItem('__salary_calculator_records_v5');
+    if (old) {
+      const data = JSON.parse(old);
+      saveRecords(data);
+      return data;
+    }
+  } catch { /* ignore */ }
   return [];
 }
 
@@ -166,6 +279,15 @@ export function loadLeaveRecords(): ILeaveRecord[] {
   try {
     const raw = localStorage.getItem(LEAVE_KEY);
     if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  // 兼容旧版
+  try {
+    const old = localStorage.getItem('__salary_calculator_leave_v5');
+    if (old) {
+      const data = JSON.parse(old);
+      saveLeaveRecords(data);
+      return data;
+    }
   } catch { /* ignore */ }
   return [];
 }

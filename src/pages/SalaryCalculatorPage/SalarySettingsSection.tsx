@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings2, DollarSign, Clock, CalendarDays, Utensils, Star, Coffee, Eye, Shield } from 'lucide-react';
+import { Settings2, DollarSign, Clock, CalendarDays, Utensils, Star, Coffee, Eye, Shield, FileText } from 'lucide-react';
 import { type ISalarySettings, saveSettings, calcDailySalary } from '@/data/salary';
 import { Switch } from '@/components/ui/switch';
 
@@ -90,10 +90,47 @@ export default function SalarySettingsSection({ settings, onSettingsChange }: Sa
             placeholder="4000"
             className="rounded-none border-2 border-border bg-background text-foreground h-11 text-sm font-bold focus-visible:ring-0 focus-visible:border-primary"
           />
-          <p className="text-xs text-muted-foreground">
-            日薪 ¥{dailySalary.toFixed(2)}（底薪 ÷ {settings.standardDaysPerMonth}天）
-          </p>
+          {settings.workMode === 'piecework' && (
+            <p className="text-xs text-muted-foreground">计件模式：底薪即为每件单价</p>
+          )}
+          {settings.workMode === 'flex' && (
+            <p className="text-xs text-muted-foreground">综合工时制：日薪 ¥{dailySalary.toFixed(2)}</p>
+          )}
+          {settings.workMode === 'standard' && (
+            <p className="text-xs text-muted-foreground">
+              日薪 ¥{dailySalary.toFixed(2)}（底薪 ÷ {settings.standardDaysPerMonth}天）
+            </p>
+          )}
         </div>
+
+        {/* 模式专属设置 */}
+        {settings.workMode === 'flex' && (
+          <div className="space-y-2 border-2 border-border bg-accent/30 p-3">
+            <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <Clock className="size-3" />
+              月标准总工时（小时）
+            </Label>
+            <Input type="number" min="0" step="1" value={settings.standardHoursPerDay * settings.standardDaysPerMonth || ''} readOnly
+              className="rounded-none border-2 border-border bg-background/50 text-foreground h-11 text-sm font-bold opacity-60" />
+            <p className="text-xs text-muted-foreground">
+              每日 {settings.standardHoursPerDay}h × {settings.standardDaysPerMonth} 天 = {settings.standardHoursPerDay * settings.standardDaysPerMonth}h/月
+            </p>
+          </div>
+        )}
+        {settings.workMode === 'piecework' && (
+          <div className="space-y-2 border-2 border-border bg-accent/30 p-3">
+            <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <FileText className="size-3" />
+              月预估件数
+            </Label>
+            <Input type="number" min="0" step="10" value={settings.customAttendanceDays || ''}
+              onChange={(e) => updateSettings({ customAttendanceDays: parseFloat(e.target.value) || 0 })}
+              placeholder="月预估件数" className="rounded-none border-2 border-border bg-background text-foreground h-11 text-sm font-bold focus-visible:ring-0 focus-visible:border-primary" />
+            <p className="text-xs text-muted-foreground">
+              预估月薪 = 单价 ¥{settings.baseSalary} × 件数
+            </p>
+          </div>
+        )}
 
         {/* 底薪计算方式 */}
         <div className="space-y-3">

@@ -111,16 +111,78 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   };
 
   const handleDateInput = (val: string) => {
-    setDateDisplay(val);
-    if (val.match(/^\d{4}-\d{2}-\d{2}$/)) { setDate(val); return; }
-    if (val.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) { const [y,m,d]=val.split('/'); setDate(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`); return; }
-    const m = val.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
-    if (m) { const [_,y,m2,d2]=m; setDate(`${y}-${String(parseInt(m2)).padStart(2,'0')}-${String(parseInt(d2)).padStart(2,'0')}`); }
+    // 只允许数字和分隔符
+    const cleaned = val.replace(/[^\d\-\/年岁月日]/g, '');
+    setDateDisplay(cleaned);
+    // 严格日期格式匹配
+    const iso = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) {
+      const y = parseInt(iso[1]), m = parseInt(iso[2]), d = parseInt(iso[3]);
+      if (y >= 2020 && y <= 2099 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        setDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+        return;
+      }
+    }
+    const slash = cleaned.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (slash) {
+      const y = parseInt(slash[1]), m = parseInt(slash[2]), d = parseInt(slash[3]);
+      if (y >= 2020 && y <= 2099 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        setDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+        setDateDisplay(formatDateDisplay(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`));
+        return;
+      }
+    }
+    const cn = cleaned.match(/(\d{4})年(\d{1,2})月(\d{1,2})日?/);
+    if (cn) {
+      const y = parseInt(cn[1]), m = parseInt(cn[2]), d = parseInt(cn[3]);
+      if (y >= 2020 && y <= 2099 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        setDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+        setDateDisplay(formatDateDisplay(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`));
+        return;
+      }
+    }
+    // 不匹配任何格式 → 清空内部日期
+    setDate('');
   };
 
-  const handleSubmit = (e: FormEvent) => { e.preventDefault(); if (!date) { toast.error('请输入有效日期（如 2026年12月19日）'); return; } if (!startTime || !endTime) { toast.error('请填写上下班时间'); return; } const computed = computeRecord(date, startTime, endTime, isHoliday); if (computed.totalHours <= 0) { toast.error('扣除休息时间后无有效工时'); return; } if (editingId) { onRecordsChange(records.map((r) => r.id === editingId ? { ...computed, id: editingId } : r)); toast.success('记录已更新'); setEditingId(null); } else { const r: IWorkRecord = { ...computed, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }; onRecordsChange([r, ...records]); const lunar = getLunarMonthDay(date); const hi = isChineseHoliday(date); const extra = hi ? `（${hi}）` : lunar ? `（农历${lunar}）` : ''; if (computed.isHoliday) toast.success(`已添加节假日加班 ${computed.totalHours}h${extra}`); else if (computed.isWeekend) toast.success(`已添加周末加班 ${computed.totalHours}h${extra}`); else toast.success(`记录已添加${extra}`); } setDate(''); setDateDisplay(''); setStartTime('08:00'); setEndTime('17:00'); setIsHoliday(false); };
-  const handleEdit = (r: IWorkRecord) => { setDate(r.date); setDateDisplay(formatDateDisplay(r.date)); setStartTime(r.startTime); setEndTime(r.endTime); setIsHoliday(r.isHoliday); setEditingId(r.id); };
+  const focusDateInput = () => {
+    const el = document.querySelector<HTMLInputElement>('input[placeholder="2026年12月19日"]');
+    if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  };
+
+  const handleEdit = (r: IWorkRecord) => {
+    setDate(r.date);
+    setDateDisplay(formatDateDisplay(r.date));
+    setStartTime(r.startTime);
+    setEndTime(r.endTime);
+    setIsHoliday(r.isHoliday);
+    setEditingId(r.id);
+    setTimeout(() => focusDateInput(), 100);
+  };
+
   const handleCancelEdit = () => { setDate(''); setDateDisplay(''); setStartTime('08:00'); setEndTime('17:00'); setIsHoliday(false); setEditingId(null); };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!date) { toast.error('请输入有效日期（如 2026年12月19日）'); return; }
+    if (!startTime || !endTime) { toast.error('请填写上下班时间'); return; }
+    const computed = computeRecord(date, startTime, endTime, isHoliday);
+    if (computed.totalHours <= 0) { toast.error('扣除休息时间后无有效工时'); return; }
+    if (editingId) {
+      onRecordsChange(records.map((r) => r.id === editingId ? { ...computed, id: editingId } : r));
+      toast.success('记录已更新'); setEditingId(null);
+    } else {
+      const r: IWorkRecord = { ...computed, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
+      onRecordsChange([r, ...records]);
+      const lunar = getLunarMonthDay(date);
+      const hi = isChineseHoliday(date);
+      const extra = hi ? `（${hi}）` : lunar ? `（农历${lunar}）` : '';
+      if (computed.isHoliday) toast.success(`已添加节假日加班 ${computed.totalHours}h${extra}`);
+      else if (computed.isWeekend) toast.success(`已添加周末加班 ${computed.totalHours}h${extra}`);
+      else toast.success(`记录已添加${extra}`);
+    }
+    setDate(''); setDateDisplay(''); setStartTime('08:00'); setEndTime('17:00'); setIsHoliday(false);
+  };
   const handleDelete = (id: string) => { onRecordsChange(records.filter((r) => r.id !== id)); if (editingId === id) handleCancelEdit(); toast.success('记录已删除'); };
   const handleDeleteLeave = (id: string) => { onLeaveRecordsChange(leaveRecords.filter((l) => l.id !== id)); toast.success('请假记录已删除'); };
   const enterMultiSelect = () => { setMultiSelectMode(true); setSelectedIds(new Set()); setSelectedLeaveIds(new Set()); };
@@ -143,6 +205,8 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   const goLeaveNext = () => leaveCalendarMonth === 11 ? (setLeaveCalendarYear((y) => y + 1), setLeaveCalendarMonth(0)) : setLeaveCalendarMonth((m) => m + 1);
   const handleLeaveSubmit = () => { if (leaveSelectedDates.size === 0) { toast.error('请至少选择一个请假日期'); return; } const ds2 = calcDailySalary(settings.baseSalary, settings.standardDaysPerMonth); const dpd = leaveHalfDay ? 0.5 : 1; const dPer = Math.round(ds2 * dpd * 100) / 100; const ex2 = new Set(leaveRecords.map((l) => l.date)); const nl: ILeaveRecord[] = []; let sk2 = 0; for (const ds of Array.from(leaveSelectedDates).sort()) { if (ex2.has(ds)) { sk2++; continue; } nl.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + ds, date: ds, type: leaveType, days: dpd, deductionAmount: dPer }); } if (nl.length === 0) { toast.info('所选日期均已有请假记录'); setLeaveCalendarOpen(false); return; } onLeaveRecordsChange([...nl, ...leaveRecords]); toast.success(`已添加 ${nl.length} 天${leaveType}，扣款 ¥${(dPer * nl.length).toFixed(2)}`); setLeaveCalendarOpen(false); };
 
+  const fm = (v: number) => `¥${v.toFixed(2)}`;
+  const fh = (v: number) => `${v.toFixed(1)}h`;
   const today = new Date().toISOString().slice(0, 10);
   const dailySalary = calcDailySalary(settings.baseSalary, settings.standardDaysPerMonth);
   const calCells = useMemo(() => generateMonthCalendar(calendarYear, calendarMonth), [calendarYear, calendarMonth]);
@@ -178,7 +242,10 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
             <div key={record.id} className={`border-2 bg-background p-3 transition-all duration-300 group ${multiSelectMode ? 'cursor-pointer' : ''} ${isCk ? 'border-primary bg-primary/10' : 'border-border hover:bg-primary hover:text-black hover:border-primary'}`} onClick={multiSelectMode ? () => tglRec(record.id) : undefined}>
               <div className="flex items-center justify-between min-w-0"><div className="flex items-center gap-2 min-w-0">{multiSelectMode && <Checkbox checked={isCk} className="rounded-none border-2 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-black shrink-0" onClick={(e) => e.stopPropagation()} onCheckedChange={() => tglRec(record.id)} />}<span className="font-bold truncate">{record.date}</span><span className="text-xs shrink-0 text-muted-foreground group-hover:text-black/60">{getWeekdayLabel(record.date)}</span>{record.isHoliday ? <Badge className="text-xs shrink-0 rounded-none border-2 border-destructive bg-destructive/20 text-destructive group-hover:border-black group-hover:text-black group-hover:bg-black/10 font-bold">节假日</Badge> : record.isWeekend ? <Badge className="text-xs shrink-0 rounded-none border-2 border-info bg-info/20 text-info group-hover:border-black group-hover:text-black group-hover:bg-black/10 font-bold">周末</Badge> : record.weekdayOvertimeHours > 0 ? <Badge className="text-xs shrink-0 rounded-none border-2 border-warning bg-warning/20 text-warning group-hover:border-black group-hover:text-black group-hover:bg-black/10 font-bold">加班</Badge> : <Badge className="text-xs shrink-0 rounded-none border-2 border-border text-muted-foreground group-hover:border-black group-hover:text-black font-bold">正常</Badge>}</div><div className="flex items-center gap-2 shrink-0">{hasAmt ? <span className="text-xs font-bold tabular-nums text-success group-hover:text-black"><CircleDollarSign className="size-3 inline mr-0.5 -mt-px" />¥{amt.toFixed(2)}</span> : <span className="text-xs text-muted-foreground/40 group-hover:text-black/30 tabular-nums"><CircleDollarSign className="size-3 inline mr-0.5 -mt-px" />¥0</span>}{!multiSelectMode && (<><Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-foreground group-hover:text-black rounded-none" onClick={() => handleEdit(record)}><Pencil className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive group-hover:text-black group-hover:hover:text-destructive rounded-none" onClick={() => handleDelete(record.id)}><Trash2 className="size-3.5" /></Button></>)}</div></div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground group-hover:text-black/70 mt-1.5"><span className="font-mono">{record.startTime} ~ {record.endTime}</span><span className="font-bold">实际 {record.totalHours}h</span></div>
-              {(record.weekdayOvertimeHours > 0 || record.weekendOvertimeHours > 0 || record.holidayOvertimeHours > 0) && (<div className="flex items-center gap-3 text-xs mt-1">{record.weekdayOvertimeHours > 0 && <span className="text-warning group-hover:text-black font-bold">平时加班 +{record.weekdayOvertimeHours}h</span>}{record.weekendOvertimeHours > 0 && <span className="text-info group-hover:text-black font-bold">周末加班 +{record.weekendOvertimeHours}h</span>}{record.holidayOvertimeHours > 0 && <span className="text-destructive group-hover:text-black font-bold">节假日加班 +{record.holidayOvertimeHours}h</span>}</div>)}
+              {showFull && !record.isWeekend && !record.isHoliday && (
+                <div className="flex items-center gap-3 text-xs mt-1"><span className="text-success group-hover:text-black font-bold">日薪 {fm(dailySalary)}</span>{record.weekdayOvertimeHours > 0 && <span className="text-warning group-hover:text-black font-bold">+ 平时加班 {fh(record.weekdayOvertimeHours)} × {fm(settings.weekdayOvertimeRate)}/h</span>}</div>
+              )}
+              {(record.weekdayOvertimeHours > 0 || record.weekendOvertimeHours > 0 || record.holidayOvertimeHours > 0) && !showFull && (<div className="flex items-center gap-3 text-xs mt-1">{record.weekdayOvertimeHours > 0 && <span className="text-warning group-hover:text-black font-bold">平时加班 +{record.weekdayOvertimeHours}h</span>}{record.weekendOvertimeHours > 0 && <span className="text-info group-hover:text-black font-bold">周末加班 +{record.weekendOvertimeHours}h</span>}{record.holidayOvertimeHours > 0 && <span className="text-destructive group-hover:text-black font-bold">节假日加班 +{record.holidayOvertimeHours}h</span>}</div>)}
             </div>
           );})}</div>
         )}
@@ -190,13 +257,14 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
         <AlertDialog open={batchDeleteOpen} onOpenChange={setBatchDeleteOpen}><AlertDialogContent className="rounded-none border-2 border-border bg-background"><AlertDialogHeader><AlertDialogTitle className="text-foreground uppercase tracking-wider">确认批量删除？</AlertDialogTitle><AlertDialogDescription className="text-muted-foreground">将删除选中的 {totalSel} 条记录</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-none border-2 border-border uppercase tracking-widest text-xs font-bold">取消</AlertDialogCancel><AlertDialogAction onClick={handleBatchDelete} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/80 uppercase tracking-widest text-xs font-bold">确认删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
         {/* 日历批量 */}
-        <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md"><DialogHeader><DialogTitle className="text-foreground uppercase tracking-wider text-sm">批量管理记录</DialogTitle><DialogDescription className="text-muted-foreground text-xs">多选日期，统一设置时间和类型。支持农历和节假日标注。</DialogDescription></DialogHeader>
+        <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md max-h-[90vh] flex flex-col"><DialogHeader><DialogTitle className="text-foreground uppercase tracking-wider text-sm">批量管理记录</DialogTitle><DialogDescription className="text-muted-foreground text-xs">多选日期，下方统一设置时间和类型</DialogDescription></DialogHeader>
           <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goPrevM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">◀ 上月</Button><span className="text-sm font-bold uppercase tracking-wider">{calendarYear}年 {MONTHS[calendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goNextM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">下月 ▶</Button></div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">{['日','一','二','三','四','五','六'].map((w) => <div key={w} className="py-1">{w}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">{calCells.map((ds, i) => { if (!ds) return <div key={`e-${i}`} className="aspect-square bg-accent/5" />; const isSel = selectedDates.has(ds); const isTd = ds === today; const hasR = records.some((r) => r.date === ds); const lunar = getLunarMonthDay(ds); const hol = isChineseHoliday(ds); return (<button key={ds} type="button" onClick={() => tglCalDate(ds)} className={`aspect-square flex flex-col items-center justify-center text-xs font-bold border-2 transition-colors cursor-pointer relative ${isSel ? 'bg-primary text-black border-primary' : hasR ? 'bg-accent/50 text-foreground border-border' : 'bg-background text-foreground border-border hover:border-primary'} ${isTd ? 'ring-1 ring-primary' : ''}`}><span>{new Date(ds + 'T00:00:00').getDate()}</span>{lunar && !isSel && <span className="text-[8px] leading-none opacity-40">{lunar.slice(-2).replace('日','')}</span>}{hol && <span className="absolute -top-0.5 right-0.5 text-[7px] text-destructive font-black">休</span>}{hasR && !isSel && <span className="text-[6px] leading-none text-muted-foreground mt-0.5">●</span>}</button>); })}</div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>已选 {selectedDates.size} 天</span><span>● 已有</span><span><Moon className="size-3 inline" /> 农历</span><span>休 节假日</span></div>
-          <div className="space-y-3 border-2 border-border bg-accent/30 p-3">
-            <div className="flex items-center gap-4"><Label className="text-xs font-bold uppercase tracking-wider">模式</Label><div className="flex gap-2"><Button type="button" variant={batchMode === 'add' ? 'default' : 'outline'} size="sm" onClick={() => setBatchMode('add')} className="h-7 text-xs rounded-none uppercase tracking-wider font-bold">批量添加</Button><Button type="button" variant={batchMode === 'modify' ? 'default' : 'outline'} size="sm" onClick={() => setBatchMode('modify')} className="h-7 text-xs rounded-none uppercase tracking-wider font-bold">批量修改</Button></div></div>
+          {/* 设置区域 —— 滚轮式排版 */}
+          <div className="overflow-y-auto flex-1 space-y-3 border-2 border-border bg-accent/30 p-3 max-h-[200px]">
+            <div className="flex items-center gap-4 sticky top-0 bg-accent/50 py-1"><Label className="text-xs font-bold uppercase tracking-wider">模式</Label><div className="flex gap-2"><Button type="button" variant={batchMode === 'add' ? 'default' : 'outline'} size="sm" onClick={() => setBatchMode('add')} className="h-7 text-xs rounded-none uppercase tracking-wider font-bold">批量添加</Button><Button type="button" variant={batchMode === 'modify' ? 'default' : 'outline'} size="sm" onClick={() => setBatchMode('modify')} className="h-7 text-xs rounded-none uppercase tracking-wider font-bold">批量修改</Button></div></div>
             <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs text-muted-foreground">上班时间</Label><Input type="time" value={batchStartTime} onChange={(e) => setBatchStartTime(e.target.value)} className="h-9 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary" /></div><div className="space-y-1.5"><Label className="text-xs text-muted-foreground">下班时间</Label><Input type="time" value={batchEndTime} onChange={(e) => setBatchEndTime(e.target.value)} className="h-9 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary" /></div></div>
             <div className="flex items-center gap-2"><Checkbox id="bH" checked={batchIsHoliday} onCheckedChange={(v) => setBatchIsHoliday(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="bH" className="text-xs font-bold uppercase tracking-widest text-muted-foreground cursor-pointer">节假日加班</Label></div>
           </div>

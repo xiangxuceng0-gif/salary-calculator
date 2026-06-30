@@ -204,11 +204,11 @@ export default function SalaryCalculatorPage() {
           </Select>
           {selectedMonth !== 'all' && (
             <span className="text-xs text-muted-foreground">
-              {filteredRecords.length} 条上班 · {filteredLeaveRecords.length} 条请假
+              工作日 {workdayAttendanceCount} 天 · {filteredRecords.length} 条上班 · {filteredLeaveRecords.length} 条请假
             </span>
           )}
           {settings.salaryMode === 'attendance' && (
-            <span className="text-xs text-primary font-bold uppercase tracking-wider ml-auto">工作日出勤 {workdayAttendanceCount} 天</span>
+            <span className="text-xs text-primary font-bold uppercase tracking-wider ml-auto">按出勤 {workdayAttendanceCount} 天</span>
           )}
         </div>
 

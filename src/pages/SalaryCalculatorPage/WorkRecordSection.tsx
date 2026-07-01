@@ -315,7 +315,7 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
               <div className="flex items-center gap-2"><Checkbox id="bH" checked={batchIsHoliday} onCheckedChange={(v) => setBatchIsHoliday(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="bH" className="text-[10px] font-bold text-muted-foreground cursor-pointer">节假日加班</Label></div>
             </div>
           )}
-          <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => setCalendarOpen(false)} className="rounded-none border-2 border-border text-xs font-bold">关闭</Button><Button type="button" onClick={handleBatchSubmit} disabled={selectedDates.size === 0} className="rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">{batchMode === 'modify' ? '修改' : '添加'} ({selectedDates.size})</Button></DialogFooter>
+          <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => { if (selectedDates.size > 0) { setSelectedDates(new Set()); setBatchModeLocked(false); setDetailDate(null); } else { setCalendarOpen(false); } }} className="rounded-none border-2 border-border text-xs font-bold">{selectedDates.size > 0 ? '清空选择' : '关闭'}</Button><Button type="button" onClick={handleBatchSubmit} disabled={selectedDates.size === 0} className="rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">{batchMode === 'modify' ? '修改' : '添加'} ({selectedDates.size})</Button></DialogFooter>
         </DialogContent></Dialog>
 
         {/* 日期详情悬浮弹窗 */}

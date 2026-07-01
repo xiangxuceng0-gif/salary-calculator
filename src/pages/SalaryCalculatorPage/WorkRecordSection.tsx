@@ -308,17 +308,6 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground">{['日','一','二','三','四','五','六'].map((w) => <div key={w} className="py-1">{w}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">{calCells.map((ds, i) => { if (!ds) return <div key={`e-${i}`} className="aspect-square bg-accent/5" />; const isSel = selectedDates.has(ds); const isTd = ds === today; const dayRecs = records.filter((r) => r.date === ds); const hasR = dayRecs.length > 0; const lunar = getLunarMonthDay(ds); const hol = isChineseHoliday(ds); let recColor = 'text-muted-foreground'; let recLabel = ''; if (hasR) { const r0 = dayRecs[0]; const pay = calcRecordOvertimePay(r0, settings); if (r0.isHoliday) { recColor = 'text-[#f59e0b]'; recLabel = `¥${pay.toFixed(0)}`; } else if (r0.isWeekend) { recColor = 'text-[#f59e0b]'; recLabel = `¥${pay.toFixed(0)}`; } else if (r0.weekdayOvertimeHours > 0) { recColor = 'text-[#10b981]'; recLabel = `¥${pay.toFixed(0)}`; } else { recColor = 'text-[#3b82f6]'; recLabel = `¥${dailySalary.toFixed(0)}`; } } return (<button key={ds} type="button" onClick={() => handleCalDateClick(ds)} className={`aspect-square flex flex-col items-center justify-center text-xs font-bold border-2 transition-colors cursor-pointer relative ${isSel ? 'bg-primary text-black border-primary' : hasR ? 'bg-accent/50 text-foreground border-border' : batchModeLocked ? 'bg-background text-foreground border-border hover:border-primary' : 'bg-background text-foreground border-border/50'} ${isTd ? 'ring-1 ring-primary' : ''}`}><span>{new Date(ds + 'T00:00:00').getDate()}</span>{lunar && !isSel && <span className="text-[8px] leading-none opacity-40">{lunar.slice(-2).replace('日','')}</span>}{hol && <span className="absolute -top-0.5 right-0.5 text-[7px] text-destructive font-black">休</span>}{hasR && !isSel && <span className={`text-[8px] leading-none font-bold mt-0.5 ${recColor}`}>{recLabel}</span>}</button>); })}</div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><span>已选{selectedDates.size}天</span><span className="text-[#3b82f6]">蓝正常</span><span className="text-[#10b981]">绿加班</span><span className="text-[#f59e0b]">黄周末</span><Moon className="size-3 inline" /><span>农历</span><span>休 节假日</span></div>
-          {/* 日期详情弹窗 */}
-          {detailDate && (() => { const dayRecs = records.filter((r) => r.date === detailDate); if (dayRecs.length === 0) return null; const r = dayRecs[0]; const pay = calcRecordOvertimePay(r, settings); const wdPay = r.weekdayOvertimeHours * settings.weekdayOvertimeRate; const wePay = r.weekendOvertimeHours * settings.weekendOvertimeRate; const hoPay = r.holidayOvertimeHours * settings.holidayOvertimeRate; return (
-            <div className="border-2 border-primary bg-background p-3 space-y-1 text-xs"><div className="flex items-center justify-between"><span className="font-bold">{detailDate} {getWeekdayLabel(detailDate)}</span><Button type="button" variant="ghost" size="icon" className="size-5 rounded-none" onClick={() => setDetailDate(null)}><X className="size-3" /></Button></div>
-              <div className="flex justify-between"><span>上班 {r.startTime}~{r.endTime}</span><span className="font-bold">实际{r.totalHours}h</span></div>
-              {!r.isWeekend && !r.isHoliday && <div className="flex justify-between"><span>日薪</span><span className="font-bold text-[#3b82f6]">{fm(dailySalary)}</span></div>}
-              {r.weekdayOvertimeHours > 0 && <div className="flex justify-between"><span>平时加班 {fh(r.weekdayOvertimeHours)}</span><span className="font-bold text-[#10b981]">{fm(wdPay)}</span></div>}
-              {r.weekendOvertimeHours > 0 && <div className="flex justify-between"><span>周末加班 {fh(r.weekendOvertimeHours)}</span><span className="font-bold text-[#f59e0b]">{fm(wePay)}</span></div>}
-              {r.holidayOvertimeHours > 0 && <div className="flex justify-between"><span>节假日加班 {fh(r.holidayOvertimeHours)}</span><span className="font-bold text-[#f59e0b]">{fm(hoPay)}</span></div>}
-              <div className="border-t border-border pt-1 flex justify-between font-bold"><span>当日合计</span><span>{fm((!r.isWeekend && !r.isHoliday ? dailySalary : 0) + pay)}</span></div>
-            </div>
-          ); })()}
           {/* 设置区仅选日期后显示 */}
           {batchModeLocked && selectedDates.size > 0 && (
             <div className="space-y-3 border-2 border-border bg-accent/30 p-3">
@@ -328,6 +317,44 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
           )}
           <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => setCalendarOpen(false)} className="rounded-none border-2 border-border text-xs font-bold">关闭</Button><Button type="button" onClick={handleBatchSubmit} disabled={selectedDates.size === 0} className="rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">{batchMode === 'modify' ? '修改' : '添加'} ({selectedDates.size})</Button></DialogFooter>
         </DialogContent></Dialog>
+
+        {/* 日期详情悬浮弹窗 */}
+        <Dialog open={!!detailDate} onOpenChange={(v) => { if (!v) setDetailDate(null); }}>
+          <DialogContent className="rounded-2xl border-2 border-border bg-background max-w-[280px] p-0 overflow-hidden">
+            {detailDate && (() => {
+              const dayRecs = records.filter((r) => r.date === detailDate);
+              if (dayRecs.length === 0) return null;
+              const r = dayRecs[0];
+              const pay = calcRecordOvertimePay(r, settings);
+              const isNormal = !r.isWeekend && !r.isHoliday;
+              const totalDay = (isNormal ? dailySalary : 0) + pay;
+              return (
+                <div>
+                  <div className="bg-primary text-black px-4 py-3 text-center">
+                    <p className="text-sm font-bold">{detailDate}</p>
+                    <p className="text-xs opacity-70">{getWeekdayLabel(detailDate)}{isNormal ? ' · 工作日' : r.isHoliday ? ' · 节假日' : ' · 周末'}</p>
+                    <p className="text-2xl font-black mt-1">{fm(totalDay)}</p>
+                  </div>
+                  <div className="p-4 space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">上班时间</span><span className="font-mono font-bold">{r.startTime} ~ {r.endTime}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">实际工时</span><span className="font-bold">{fh(r.totalHours)}</span></div>
+                    {isNormal && <div className="flex justify-between border-t border-border/50 pt-2"><span className="text-muted-foreground">日薪</span><span className="font-bold text-[#3b82f6]">{fm(dailySalary)}</span></div>}
+                    {r.weekdayOvertimeHours > 0 && <div className="flex justify-between"><span className="text-muted-foreground">平时加班 {fh(r.weekdayOvertimeHours)}</span><span className="font-bold text-[#10b981]">+{fm(r.weekdayOvertimeHours * settings.weekdayOvertimeRate)}</span></div>}
+                    {r.weekendOvertimeHours > 0 && <div className="flex justify-between"><span className="text-muted-foreground">周末加班 {fh(r.weekendOvertimeHours)}</span><span className="font-bold text-[#f59e0b]">+{fm(r.weekendOvertimeHours * settings.weekendOvertimeRate)}</span></div>}
+                    {r.holidayOvertimeHours > 0 && <div className="flex justify-between"><span className="text-muted-foreground">节假日加班 {fh(r.holidayOvertimeHours)}</span><span className="font-bold text-[#f59e0b]">+{fm(r.holidayOvertimeHours * settings.holidayOvertimeRate)}</span></div>}
+                    {(r.lunchDeductionHours > 0 || r.afternoonDeductionHours > 0) && (
+                      <div className="border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                        {r.lunchDeductionHours > 0 && <div className="flex justify-between"><span>午休扣除</span><span>-{fh(r.lunchDeductionHours)}</span></div>}
+                        {r.afternoonDeductionHours > 0 && <div className="flex justify-between"><span>下午休扣除</span><span>-{fh(r.afternoonDeductionHours)}</span></div>}
+                      </div>
+                    )}
+                    <div className="border-t border-border pt-2 flex justify-between font-bold text-base"><span>当日合计</span><span className="text-primary">{fm(totalDay)}</span></div>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
 
         {/* 请假 Dialog */}
         <Dialog open={leaveCalendarOpen} onOpenChange={setLeaveCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md"><DialogHeader><DialogTitle className="text-foreground uppercase tracking-wider text-sm">添加请假</DialogTitle><DialogDescription className="text-muted-foreground text-xs">多选日期，统一设置类型和天数</DialogDescription></DialogHeader>

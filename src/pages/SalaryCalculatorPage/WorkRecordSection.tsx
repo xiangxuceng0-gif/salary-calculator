@@ -79,6 +79,7 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedLeaveIds, setSelectedLeaveIds] = useState<Set<string>>(new Set());
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchSettingsOpen, setBatchSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const toggleSortOrder = () => setSortOrder((prev) => { const next = prev === 'asc' ? 'desc' : 'asc'; try { localStorage.setItem('__salary_calculator_sort_order', next); } catch {} return next; });
@@ -210,21 +211,16 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   const handleBatchDelete = () => { onRecordsChange(records.filter((r) => !selectedIds.has(r.id))); onLeaveRecordsChange(leaveRecords.filter((l) => !selectedLeaveIds.has(l.id))); toast.success(`已删除 ${totalSel} 条记录`); exitMultiSelect(); setBatchDeleteOpen(false); };
   const openCal = () => { const n = new Date(); setCalendarYear(n.getFullYear()); setCalendarMonth(n.getMonth()); setSelectedDates(new Set()); setBatchStartTime('08:00'); setBatchEndTime('17:00'); setBatchIsHoliday(false); setBatchOverlapMode('skip'); setBatchMode('add'); setBatchModeLocked(false); setDetailDate(null); setCalendarOpen(true); };
   const tglCalDate = (ds: string) => {
-    if (!batchModeLocked) return; // 必须先选模式
+    if (!batchModeLocked) return;
     setSelectedDates((p) => { const n = new Set(p); if (n.has(ds)) n.delete(ds); else n.add(ds); return n; });
   };
   const handleCalDateClick = (ds: string) => {
-    if (!batchModeLocked) {
-      // 未锁模式：显示详情
-      const dayRecs = records.filter((r) => r.date === ds);
-      if (dayRecs.length > 0) setDetailDate(ds);
-      else {
-        setSelectedDates(new Set([ds]));
-        setBatchMode('add'); setBatchModeLocked(true);
-      }
-      return;
-    }
-    tglCalDate(ds);
+    // 有记录的日期始终弹详情
+    const dayRecs = records.filter((r) => r.date === ds);
+    if (dayRecs.length > 0) { setDetailDate(ds); return; }
+    // 空白日期：未锁模式则自动进入添加，已锁则切换选中
+    if (!batchModeLocked) { setSelectedDates(new Set([ds])); setBatchMode('add'); setBatchModeLocked(true); }
+    else tglCalDate(ds);
   };
   const lockBatchMode = (mode: 'add' | 'modify') => { setBatchMode(mode); setBatchModeLocked(true); setDetailDate(null); };
   const goPrevM = () => calendarMonth === 0 ? (setCalendarYear((y) => y - 1), setCalendarMonth(11)) : setCalendarMonth((m) => m - 1);
@@ -308,15 +304,21 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground">{['日','一','二','三','四','五','六'].map((w) => <div key={w} className="py-1">{w}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">{calCells.map((ds, i) => { if (!ds) return <div key={`e-${i}`} className="aspect-square bg-accent/5" />; const isSel = selectedDates.has(ds); const isTd = ds === today; const dayRecs = records.filter((r) => r.date === ds); const hasR = dayRecs.length > 0; const lunar = getLunarMonthDay(ds); const hol = isChineseHoliday(ds); let recColor = 'text-muted-foreground'; let recLabel = ''; if (hasR) { const r0 = dayRecs[0]; const pay = calcRecordOvertimePay(r0, settings); if (r0.isHoliday) { recColor = 'text-[#f59e0b]'; recLabel = `¥${pay.toFixed(0)}`; } else if (r0.isWeekend) { recColor = 'text-[#f59e0b]'; recLabel = `¥${pay.toFixed(0)}`; } else if (r0.weekdayOvertimeHours > 0) { recColor = 'text-[#10b981]'; recLabel = `¥${pay.toFixed(0)}`; } else { recColor = 'text-[#3b82f6]'; recLabel = `¥${dailySalary.toFixed(0)}`; } } return (<button key={ds} type="button" onClick={() => handleCalDateClick(ds)} className={`aspect-square flex flex-col items-center justify-center text-xs font-bold border-2 transition-colors cursor-pointer relative ${isSel ? 'bg-primary text-black border-primary' : hasR ? 'bg-accent/50 text-foreground border-border' : batchModeLocked ? 'bg-background text-foreground border-border hover:border-primary' : 'bg-background text-foreground border-border/50'} ${isTd ? 'ring-1 ring-primary' : ''}`}><span>{new Date(ds + 'T00:00:00').getDate()}</span>{lunar && !isSel && <span className="text-[8px] leading-none opacity-40">{lunar.slice(-2).replace('日','')}</span>}{hol && <span className="absolute -top-0.5 right-0.5 text-[7px] text-destructive font-black">休</span>}{hasR && !isSel && <span className={`text-[8px] leading-none font-bold mt-0.5 ${recColor}`}>{recLabel}</span>}</button>); })}</div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><span>已选{selectedDates.size}天</span><span className="text-[#3b82f6]">蓝正常</span><span className="text-[#10b981]">绿加班</span><span className="text-[#f59e0b]">黄周末</span><Moon className="size-3 inline" /><span>农历</span><span>休 节假日</span></div>
-          {/* 设置区仅选日期后显示 */}
-          {batchModeLocked && selectedDates.size > 0 && (
-            <div className="space-y-3 border-2 border-border bg-accent/30 p-3">
-              <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-[10px] text-muted-foreground">上班时间</Label><Input type="time" value={batchStartTime} onChange={(e) => setBatchStartTime(e.target.value)} className="h-8 text-xs rounded-none border-2 border-border bg-background" /></div><div className="space-y-1"><Label className="text-[10px] text-muted-foreground">下班时间</Label><Input type="time" value={batchEndTime} onChange={(e) => setBatchEndTime(e.target.value)} className="h-8 text-xs rounded-none border-2 border-border bg-background" /></div></div>
-              <div className="flex items-center gap-2"><Checkbox id="bH" checked={batchIsHoliday} onCheckedChange={(v) => setBatchIsHoliday(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="bH" className="text-[10px] font-bold text-muted-foreground cursor-pointer">节假日加班</Label></div>
-            </div>
-          )}
-          <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => { if (selectedDates.size > 0) { setSelectedDates(new Set()); setBatchModeLocked(false); setDetailDate(null); } else { setCalendarOpen(false); } }} className="rounded-none border-2 border-border text-xs font-bold">{selectedDates.size > 0 ? '清空选择' : '关闭'}</Button><Button type="button" onClick={handleBatchSubmit} disabled={selectedDates.size === 0} className="rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">{batchMode === 'modify' ? '修改' : '添加'} ({selectedDates.size})</Button></DialogFooter>
+          <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => { if (selectedDates.size > 0) { setSelectedDates(new Set()); setBatchModeLocked(false); setDetailDate(null); } else { setCalendarOpen(false); } }} className="rounded-none border-2 border-border text-xs font-bold">{selectedDates.size > 0 ? '清空选择' : '关闭'}</Button><Button type="button" onClick={() => setBatchSettingsOpen(true)} disabled={selectedDates.size === 0} className="rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">{batchMode === 'modify' ? '修改' : '添加'} ({selectedDates.size})</Button></DialogFooter>
         </DialogContent></Dialog>
+
+        {/* 批量设置悬浮弹窗 */}
+        <Dialog open={batchSettingsOpen} onOpenChange={setBatchSettingsOpen}>
+          <DialogContent className="rounded-2xl border-2 border-border bg-background max-w-[280px] p-0 overflow-hidden">
+            <div className="bg-primary text-black px-4 py-3 text-center"><p className="text-sm font-bold">{batchMode === 'modify' ? '批量修改' : '批量添加'}</p><p className="text-xs opacity-70">已选 {selectedDates.size} 天</p></div>
+            <div className="p-4 space-y-3">
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">上班时间</Label><Input type="time" value={batchStartTime} onChange={(e) => setBatchStartTime(e.target.value)} className="h-9 text-sm rounded-none border-2 border-border bg-background" /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">下班时间</Label><Input type="time" value={batchEndTime} onChange={(e) => setBatchEndTime(e.target.value)} className="h-9 text-sm rounded-none border-2 border-border bg-background" /></div>
+              <div className="flex items-center gap-2"><Checkbox id="bHPop" checked={batchIsHoliday} onCheckedChange={(v) => setBatchIsHoliday(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="bHPop" className="text-xs font-bold text-muted-foreground cursor-pointer">节假日加班</Label></div>
+            </div>
+            <div className="p-4 pt-0 flex gap-2"><Button type="button" variant="outline" onClick={() => setBatchSettingsOpen(false)} className="flex-1 rounded-none border-2 border-border text-xs font-bold">上一步</Button><Button type="button" onClick={() => { handleBatchSubmit(); setBatchSettingsOpen(false); }} className="flex-1 rounded-none bg-primary text-black hover:bg-white border-2 border-primary text-xs font-bold">确认{batchMode === 'modify' ? '修改' : '添加'}</Button></div>
+          </DialogContent>
+        </Dialog>
 
         {/* 日期详情悬浮弹窗 */}
         <Dialog open={!!detailDate} onOpenChange={(v) => { if (!v) setDetailDate(null); }}>

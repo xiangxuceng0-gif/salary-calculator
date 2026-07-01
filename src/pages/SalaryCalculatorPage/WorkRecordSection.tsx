@@ -215,12 +215,17 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
     setSelectedDates((p) => { const n = new Set(p); if (n.has(ds)) n.delete(ds); else n.add(ds); return n; });
   };
   const handleCalDateClick = (ds: string) => {
-    // 有记录的日期始终弹详情
     const dayRecs = records.filter((r) => r.date === ds);
-    if (dayRecs.length > 0) { setDetailDate(ds); return; }
-    // 空白日期：未锁模式则自动进入添加，已锁则切换选中
-    if (!batchModeLocked) { setSelectedDates(new Set([ds])); setBatchMode('add'); setBatchModeLocked(true); }
-    else tglCalDate(ds);
+    // 修改模式下有记录的日期可选中
+    if (batchModeLocked && batchMode === 'modify' && dayRecs.length > 0) { tglCalDate(ds); return; }
+    // 未锁模式：有记录弹详情，空白自动进入添加
+    if (!batchModeLocked) {
+      if (dayRecs.length > 0) { setDetailDate(ds); return; }
+      setSelectedDates(new Set([ds])); setBatchMode('add'); setBatchModeLocked(true); return;
+    }
+    // 添加模式下点有记录日期弹详情
+    if (batchModeLocked && batchMode === 'add' && dayRecs.length > 0) { setDetailDate(ds); return; }
+    tglCalDate(ds);
   };
   const lockBatchMode = (mode: 'add' | 'modify') => { setBatchMode(mode); setBatchModeLocked(true); setDetailDate(null); };
   const goPrevM = () => calendarMonth === 0 ? (setCalendarYear((y) => y - 1), setCalendarMonth(11)) : setCalendarMonth((m) => m - 1);
@@ -297,7 +302,7 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
         {/* 日历批量 */}
         <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md max-h-[90vh] flex flex-col"><DialogHeader><DialogTitle className="text-foreground text-sm font-bold">日历管理</DialogTitle><DialogDescription className="text-muted-foreground text-xs">{batchModeLocked ? `已选${selectedDates.size}天 · 可点击日期增删` : '请先选择模式，再点击日期'}</DialogDescription></DialogHeader>
           {/* 模式锁定按钮 */}
-          <div className="flex gap-2"><Button type="button" variant={batchModeLocked && batchMode === 'add' ? 'default' : 'outline'} size="sm" onClick={() => lockBatchMode('add')} className="flex-1 h-8 text-xs rounded-none font-bold">批量添加</Button><Button type="button" variant={batchModeLocked && batchMode === 'modify' ? 'default' : 'outline'} size="sm" onClick={() => lockBatchMode('modify')} className="flex-1 h-8 text-xs rounded-none font-bold">批量修改</Button>{batchModeLocked && <Button type="button" variant="ghost" size="sm" onClick={() => { setBatchModeLocked(false); setSelectedDates(new Set()); setDetailDate(null); }} className="h-8 text-xs rounded-none">取消</Button>}</div>
+          <div className="flex gap-2"><Button type="button" variant={batchModeLocked && batchMode === 'add' ? 'default' : 'outline'} size="sm" onClick={() => lockBatchMode('add')} className="flex-1 h-8 text-xs rounded-none font-bold">批量添加</Button><Button type="button" variant={batchModeLocked && batchMode === 'modify' ? 'default' : 'outline'} size="sm" onClick={() => lockBatchMode('modify')} className="flex-1 h-8 text-xs rounded-none font-bold">批量修改</Button>{batchModeLocked && <Button type="button" variant="ghost" size="icon" onClick={() => { setBatchModeLocked(false); setSelectedDates(new Set()); setDetailDate(null); }} className="size-8 rounded-none shrink-0" title="退出批量模式"><X className="size-4" /></Button>}</div>
           {/* 月份导航 */}
           <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goPrevM} className="h-7 text-xs rounded-none">◀ 上月</Button><span className="text-xl font-black text-primary">{calendarYear} 年 {MONTHS[calendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goNextM} className="h-7 text-xs rounded-none">下月 ▶</Button></div>
           {/* 日历格子 */}

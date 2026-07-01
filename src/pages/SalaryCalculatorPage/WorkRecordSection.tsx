@@ -1,5 +1,4 @@
 import { useState, useMemo, type FormEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Clock, CalendarDays, Pencil, CalendarPlus, CircleDollarSign, ArrowUpDown, ListChecks, Check, X, Moon, PartyPopper } from 'lucide-react';
+import { Plus, Trash2, Clock, CalendarDays, Pencil, CalendarPlus, CircleDollarSign, ArrowUpDown, ListChecks, Check, X, Moon, PartyPopper, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ISalarySettings, IWorkRecord, ILeaveRecord } from '@/data/salary';
 import {
@@ -78,8 +77,20 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedLeaveIds, setSelectedLeaveIds] = useState<Set<string>>(new Set());
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleSortOrder = () => setSortOrder((prev) => { const next = prev === 'asc' ? 'desc' : 'asc'; try { localStorage.setItem('__salary_calculator_sort_order', next); } catch {} return next; });
+
+  const handleRecalculateAll = () => {
+    if (records.length === 0) { toast.info('没有记录需要重算'); return; }
+    const updated = records.map((r) => {
+      const c = computeRecord(r.date, r.startTime, r.endTime, r.isHoliday);
+      return { ...c, id: r.id };
+    });
+    onRecordsChange(updated);
+    saveRecords(updated);
+    toast.success(`已按当前费率重算 ${updated.length} 条记录`);
+  };
   const monthStats = useMemo(() => {
     const map = new Map<string, { workDays: number; leaveDays: number }>();
     for (const r of records) { const mk = getMonthKey(r.date); const e = map.get(mk) || { workDays: 0, leaveDays: 0 }; e.workDays++; map.set(mk, e); }
@@ -88,9 +99,10 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   }, [records, leaveRecords]);
   const availableMonths = useMemo(() => Array.from(monthStats.keys()).sort().reverse(), [monthStats]);
   const filteredRecords = useMemo(() => {
-    const list = filterMonth === 'all' ? records : records.filter((r) => getMonthKey(r.date) === filterMonth);
+    let list = filterMonth === 'all' ? records : records.filter((r) => getMonthKey(r.date) === filterMonth);
+    if (searchQuery) { const q = searchQuery.toLowerCase(); list = list.filter((r) => r.date.includes(q) || r.startTime.includes(q) || r.endTime.includes(q)); }
     return sortOrder === 'desc' ? [...list].sort((a, b) => a.date.localeCompare(b.date)).reverse() : [...list].sort((a, b) => a.date.localeCompare(b.date));
-  }, [records, filterMonth, sortOrder]);
+  }, [records, filterMonth, sortOrder, searchQuery]);
   const filteredLeaveRecords = useMemo(() => {
     const list = filterMonth === 'all' ? leaveRecords : leaveRecords.filter((l) => getMonthKey(l.date) === filterMonth);
     return sortOrder === 'desc' ? [...list].sort((a, b) => a.date.localeCompare(b.date)).reverse() : [...list].sort((a, b) => a.date.localeCompare(b.date));
@@ -222,12 +234,23 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
   const leaveTotalAmt = filteredLeaveRecords.reduce((s, l) => Math.round((s + l.deductionAmount) * 100) / 100, 0);
 
   return (
-    <Card className="border-2 border-border bg-background rounded-none h-full">
-      <CardHeader className="pb-3 border-b-2 border-border"><CardTitle className="flex items-center justify-between text-sm font-bold uppercase tracking-wider"><span className="flex items-center gap-2"><Clock className="size-4 text-primary" />上班记录</span><div className="flex items-center gap-1">{multiSelectMode ? (<Button type="button" variant="ghost" size="sm" onClick={exitMultiSelect} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider font-bold"><X className="size-3.5 mr-1" />完成</Button>) : (<><Button type="button" variant="ghost" size="icon" onClick={enterMultiSelect} className="size-7 text-muted-foreground hover:text-foreground rounded-none" title="批量管理"><ListChecks className="size-3.5" /></Button><Button type="button" variant="ghost" size="icon" onClick={toggleSortOrder} className="size-7 text-muted-foreground hover:text-foreground rounded-none" title={sortOrder === 'asc' ? '正序 ↑' : '倒序 ↓'}><ArrowUpDown className={`size-3.5 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} /></Button></>)}</div></CardTitle></CardHeader>
-      <CardContent className="space-y-4 p-6">
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-2 flex items-center justify-between border-b border-border">
+        <div className="flex items-center gap-2">
+          {multiSelectMode ? (<Button type="button" variant="ghost" size="sm" onClick={exitMultiSelect} className="h-7 text-xs rounded-none"><X className="size-3.5 mr-1" />完成</Button>) : (
+            <><Button type="button" variant="ghost" size="icon" onClick={handleRecalculateAll} className="size-7 rounded-none" title="重算"><RefreshCw className="size-3.5" /></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={enterMultiSelect} className="size-7 rounded-none" title="批量"><ListChecks className="size-3.5" /></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={toggleSortOrder} className="size-7 rounded-none" title="排序"><ArrowUpDown className={`size-3.5 ${sortOrder === 'desc' ? 'rotate-180' : ''}`} /></Button></>
+          )}
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={openCal} className="h-7 text-xs rounded-none border-2 border-border gap-1"><CalendarPlus className="size-3" />日历批量</Button>
+      </div>
+      <div className="space-y-3 p-4 flex-1 overflow-y-auto">
+        {/* 搜索 */}
+        <div className="flex items-center gap-2"><Search className="size-3.5 text-muted-foreground shrink-0" /><Input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索日期..." className="h-8 text-xs rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary flex-1" /></div>
         <form onSubmit={handleSubmit} className="space-y-3 border-2 border-border bg-accent/30 p-4">
           <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{editingId ? '编辑记录' : '添加记录'}</span>{editingId && <Button type="button" variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">取消编辑</Button>}</div>
-          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">日期</Label><div className="flex items-center gap-2"><Input type="date" value={date} onChange={(e) => { setDate(e.target.value); setDateDisplay(e.target.value ? formatDateDisplay(e.target.value) : ''); }} className="h-10 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary flex-1" /><Button type="button" variant="outline" size="icon" onClick={openCal} className="size-10 shrink-0 rounded-none border-2 border-border text-foreground hover:bg-primary hover:text-black hover:border-primary" title="日历批量"><CalendarPlus className="size-4" /></Button></div>{date && (<div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">{dateHolidayName ? <span className="text-destructive font-bold flex items-center gap-1"><PartyPopper className="size-3" />{dateHolidayName}</span> : isWeekend(date) ? <span className="text-info font-bold">周末</span> : <span>工作日</span>}{dateLunar && <span className="flex items-center gap-1"><Moon className="size-3" />农历{dateLunar}</span>}</div>)}</div>
+          <div className="space-y-1.5"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">日期</Label><div className="flex items-center gap-2"><Input type="date" value={date} min="2020-01-01" max="2099-12-31" onChange={(e) => { setDate(e.target.value); setDateDisplay(e.target.value ? formatDateDisplay(e.target.value) : ''); }} className="h-10 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary flex-1" /><Button type="button" variant="outline" size="icon" onClick={openCal} className="size-10 shrink-0 rounded-none border-2 border-border text-foreground hover:bg-primary hover:text-black hover:border-primary" title="日历批量"><CalendarPlus className="size-4" /></Button></div>{date && (<div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">{dateHolidayName ? <span className="text-destructive font-bold flex items-center gap-1"><PartyPopper className="size-3" />{dateHolidayName}</span> : isWeekend(date) ? <span className="text-info font-bold">周末</span> : <span>工作日</span>}{dateLunar && <span className="flex items-center gap-1"><Moon className="size-3" />农历{dateLunar}</span>}</div>)}</div>
           <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">上班时间</Label><Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-10 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary" /></div><div className="space-y-1.5"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">下班时间</Label><Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-10 text-sm rounded-none border-2 border-border bg-background text-foreground focus-visible:ring-0 focus-visible:border-primary" /></div></div>
           <div className="space-y-1 text-xs text-muted-foreground border-t border-border/50 pt-2"><span className="font-bold uppercase tracking-wider">休息扣除</span><div className="flex gap-4"><span>午休 {settings.lunchStartTime}~{settings.lunchEndTime}：(午休扣除会在记录详情中显示)</span></div></div>
           <div className="flex items-center gap-2"><Checkbox id="isHoliday" checked={isHoliday} onCheckedChange={(v) => setIsHoliday(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="isHoliday" className="text-xs font-bold uppercase tracking-widest text-muted-foreground cursor-pointer">节假日加班</Label></div>
@@ -258,7 +281,7 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
 
         {/* 日历批量 */}
         <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md max-h-[90vh] flex flex-col"><DialogHeader><DialogTitle className="text-foreground uppercase tracking-wider text-sm">批量管理记录</DialogTitle><DialogDescription className="text-muted-foreground text-xs">多选日期，下方统一设置时间和类型</DialogDescription></DialogHeader>
-          <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goPrevM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">◀ 上月</Button><span className="text-sm font-bold uppercase tracking-wider">{calendarYear}年 {MONTHS[calendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goNextM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">下月 ▶</Button></div>
+          <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goPrevM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">◀ 上月</Button><span className="text-base font-black tracking-tight">{calendarYear}年{MONTHS[calendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goNextM} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">下月 ▶</Button></div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">{['日','一','二','三','四','五','六'].map((w) => <div key={w} className="py-1">{w}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">{calCells.map((ds, i) => { if (!ds) return <div key={`e-${i}`} className="aspect-square bg-accent/5" />; const isSel = selectedDates.has(ds); const isTd = ds === today; const hasR = records.some((r) => r.date === ds); const lunar = getLunarMonthDay(ds); const hol = isChineseHoliday(ds); return (<button key={ds} type="button" onClick={() => tglCalDate(ds)} className={`aspect-square flex flex-col items-center justify-center text-xs font-bold border-2 transition-colors cursor-pointer relative ${isSel ? 'bg-primary text-black border-primary' : hasR ? 'bg-accent/50 text-foreground border-border' : 'bg-background text-foreground border-border hover:border-primary'} ${isTd ? 'ring-1 ring-primary' : ''}`}><span>{new Date(ds + 'T00:00:00').getDate()}</span>{lunar && !isSel && <span className="text-[8px] leading-none opacity-40">{lunar.slice(-2).replace('日','')}</span>}{hol && <span className="absolute -top-0.5 right-0.5 text-[7px] text-destructive font-black">休</span>}{hasR && !isSel && <span className="text-[6px] leading-none text-muted-foreground mt-0.5">●</span>}</button>); })}</div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>已选 {selectedDates.size} 天</span><span>● 已有</span><span><Moon className="size-3 inline" /> 农历</span><span>休 节假日</span></div>
@@ -273,14 +296,14 @@ export default function WorkRecordSection({ settings, records, onRecordsChange, 
 
         {/* 请假 Dialog */}
         <Dialog open={leaveCalendarOpen} onOpenChange={setLeaveCalendarOpen}><DialogContent className="rounded-none border-2 border-border bg-background max-w-md"><DialogHeader><DialogTitle className="text-foreground uppercase tracking-wider text-sm">添加请假</DialogTitle><DialogDescription className="text-muted-foreground text-xs">多选日期，统一设置类型和天数</DialogDescription></DialogHeader>
-          <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goLeavePrev} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">◀ 上月</Button><span className="text-sm font-bold uppercase tracking-wider">{leaveCalendarYear}年 {MONTHS[leaveCalendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goLeaveNext} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">下月 ▶</Button></div>
+          <div className="flex items-center justify-between"><Button type="button" variant="ghost" size="sm" onClick={goLeavePrev} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">◀ 上月</Button><span className="text-base font-black tracking-tight">{leaveCalendarYear}年{MONTHS[leaveCalendarMonth]}</span><Button type="button" variant="ghost" size="sm" onClick={goLeaveNext} className="h-7 text-xs text-muted-foreground hover:text-foreground rounded-none uppercase tracking-wider">下月 ▶</Button></div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">{['日','一','二','三','四','五','六'].map((w) => <div key={w} className="py-1">{w}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">{leaveCalCells.map((ds, i) => { if (!ds) return <div key={`le-${i}`} className="aspect-square bg-accent/5" />; const isSel = leaveSelectedDates.has(ds); const isTd = ds === today; const hasL = leaveRecords.some((l) => l.date === ds); const lunar = getLunarMonthDay(ds); const hol = isChineseHoliday(ds); return (<button key={ds} type="button" onClick={() => tglLeaveDate(ds)} className={`aspect-square flex flex-col items-center justify-center text-xs font-bold border-2 transition-colors cursor-pointer relative ${isSel ? 'bg-destructive text-destructive-foreground border-destructive' : hasL ? 'bg-destructive/10 text-foreground border-destructive/30' : 'bg-background text-foreground border-border hover:border-destructive'} ${isTd ? 'ring-1 ring-primary' : ''}`}><span>{new Date(ds + 'T00:00:00').getDate()}</span>{lunar && !isSel && <span className="text-[8px] leading-none opacity-40">{lunar.slice(-2).replace('日','')}</span>}{hol && <span className="absolute -top-0.5 right-0.5 text-[7px] text-destructive font-black">休</span>}{hasL && !isSel && <span className="text-[6px] leading-none text-destructive/60 mt-0.5">●</span>}</button>); })}</div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>已选 {leaveSelectedDates.size} 天</span><span><Moon className="size-3 inline" /> 农历</span><span>休 节假日</span></div>
           <div className="space-y-3 border-2 border-border bg-accent/30 p-3"><div className="space-y-1.5"><Label className="text-xs text-muted-foreground">请假类型</Label><Select value={leaveType} onValueChange={setLeaveType}><SelectTrigger className="h-9 text-sm rounded-none border-2 border-border bg-background focus:ring-0 focus:border-primary"><SelectValue /></SelectTrigger><SelectContent className="rounded-none border-2 border-border bg-background">{LEAVE_TYPES.map((lt) => <SelectItem key={lt} value={lt} className="focus:bg-primary focus:text-black">{lt}</SelectItem>)}</SelectContent></Select></div><div className="flex items-center gap-2"><Checkbox id="lH" checked={leaveHalfDay} onCheckedChange={(v) => setLeaveHalfDay(v === true)} className="rounded-none border-2 border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive" /><Label htmlFor="lH" className="text-xs font-bold uppercase tracking-widest text-muted-foreground cursor-pointer">半天假（默认全天）</Label></div><p className="text-xs text-muted-foreground">日薪 ¥{dailySalary.toFixed(2)} · {leaveHalfDay ? '半天扣 ¥' + (dailySalary / 2).toFixed(2) : '全天扣 ¥' + dailySalary.toFixed(2)}</p></div>
           <DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => setLeaveCalendarOpen(false)} className="rounded-none border-2 border-border uppercase tracking-widest text-xs font-bold">取消</Button><Button type="button" onClick={handleLeaveSubmit} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/80 border-2 border-destructive uppercase tracking-widest text-xs font-bold">添加请假 ({leaveSelectedDates.size})</Button></DialogFooter>
         </DialogContent></Dialog>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

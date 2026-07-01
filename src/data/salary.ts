@@ -13,6 +13,7 @@ export const WORK_MODE_LABELS: Record<WorkMode, string> = {
 export interface ISalarySettings {
   workMode: WorkMode;
   baseSalary: number;
+  bonusAmount: number;
   weekdayOvertimeRate: number;
   weekendOvertimeRate: number;
   holidayOvertimeRate: number;
@@ -28,6 +29,8 @@ export interface ISalarySettings {
   insuranceType: 'none' | 'social' | 'housing' | 'both';
   socialInsuranceAmount: number;
   housingFundAmount: number;
+  sickLeaveRate: number;
+  pieceRate: number;
 }
 
 export interface IWorkRecord {
@@ -64,6 +67,7 @@ export interface ILeaveBreakdown {
 export const DEFAULT_SETTINGS: ISalarySettings = {
   workMode: 'standard',
   baseSalary: 4000,
+  bonusAmount: 0,
   weekdayOvertimeRate: 22.7,
   weekendOvertimeRate: 28.4,
   holidayOvertimeRate: 68.2,
@@ -79,6 +83,8 @@ export const DEFAULT_SETTINGS: ISalarySettings = {
   insuranceType: 'none',
   socialInsuranceAmount: 0,
   housingFundAmount: 0,
+  sickLeaveRate: 1,
+  pieceRate: 10,
 };
 
 // ========== WEEKDAY ==========
@@ -296,4 +302,45 @@ export function saveLeaveRecords(records: ILeaveRecord[]): void {
   try {
     localStorage.setItem(LEAVE_KEY, JSON.stringify(records));
   } catch { /* ignore */ }
+}
+
+// ========== EXPORT / IMPORT ==========
+
+export interface IBackupData {
+  version: string;
+  exportedAt: string;
+  settings: ISalarySettings;
+  records: IWorkRecord[];
+  leaveRecords: ILeaveRecord[];
+}
+
+export function exportAllData(): string {
+  const data: IBackupData = {
+    version: '0.3.1',
+    exportedAt: new Date().toISOString(),
+    settings: loadSettings(),
+    records: loadRecords(),
+    leaveRecords: loadLeaveRecords(),
+  };
+  return JSON.stringify(data, null, 2);
+}
+
+export function importAllData(json: string): { success: boolean; message: string } {
+  try {
+    const data = JSON.parse(json) as IBackupData;
+    if (!data.settings || !Array.isArray(data.records) || !Array.isArray(data.leaveRecords)) {
+      return { success: false, message: '无效的备份文件：缺少必要数据' };
+    }
+    // 合并设置（保留新字段的默认值）
+    const merged = { ...DEFAULT_SETTINGS, ...data.settings };
+    saveSettings(merged);
+    saveRecords(data.records);
+    saveLeaveRecords(data.leaveRecords);
+    return {
+      success: true,
+      message: `导入成功！${data.records.length} 条上班记录，${data.leaveRecords.length} 条请假记录`,
+    };
+  } catch (e: any) {
+    return { success: false, message: `解析失败：${e.message || '未知错误'}` };
+  }
 }

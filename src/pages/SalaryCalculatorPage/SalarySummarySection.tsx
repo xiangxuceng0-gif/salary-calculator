@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, Clock, CalendarDays, Star, TrendingUp, UserMinus, Shield, Banknote, Zap } from 'lucide-react';
+import { Wallet, Clock, CalendarDays, Star, TrendingUp, UserMinus, Shield, Banknote, Zap, Gift } from 'lucide-react';
 import type { ISalarySettings, IWorkRecord, ILeaveRecord } from '@/data/salary';
 import { calcDailySalary, countWorkdayAttendance, calcLeaveBreakdown } from '@/data/salary';
 
@@ -12,7 +12,7 @@ interface SalarySummarySectionProps {
 
 export default function SalarySummarySection({ settings, records, leaveRecords }: SalarySummarySectionProps) {
   const summary = useMemo(() => {
-    const { baseSalary, weekdayOvertimeRate, weekendOvertimeRate, holidayOvertimeRate, standardDaysPerMonth, salaryMode, customAttendanceDays, insuranceType, socialInsuranceAmount, housingFundAmount } = settings;
+    const { baseSalary, bonusAmount, weekdayOvertimeRate, weekendOvertimeRate, holidayOvertimeRate, standardDaysPerMonth, salaryMode, customAttendanceDays, insuranceType, socialInsuranceAmount, housingFundAmount } = settings;
     let twh = 0, weh = 0, hoh = 0, th = 0;
     for (const r of records) { th += r.totalHours; twh += r.weekdayOvertimeHours; weh += r.weekendOvertimeHours; hoh += r.holidayOvertimeHours; }
     const wPay = twh * weekdayOvertimeRate; const wePay = weh * weekendOvertimeRate; const hoPay = hoh * holidayOvertimeRate;
@@ -24,10 +24,10 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
     const effDays = salaryMode === 'attendance' ? (customAttendanceDays > 0 ? customAttendanceDays : autoAtt) : standardDaysPerMonth;
     const effBase = salaryMode === 'attendance' ? Math.round(ds2 * effDays * 100) / 100 : baseSalary;
     const insAmt = (insuranceType === 'social' || insuranceType === 'both' ? socialInsuranceAmount : 0) + (insuranceType === 'housing' || insuranceType === 'both' ? housingFundAmount : 0);
-    const totalPay = effBase + overtimeTotal - tldAmt;
+    const totalPay = effBase + bonusAmount + overtimeTotal - tldAmt;
     const netPay = totalPay - insAmt;
     const leaveBreakdown = calcLeaveBreakdown(leaveRecords);
-    return { effBase, salaryMode, effDays, ds2, twh, wPay, weh, wePay, hoh, hoPay, overtimeTotal, tld, tldAmt, leaveBreakdown, th, totalPay, insAmt, netPay };
+    return { effBase, bonusAmount, salaryMode, effDays, ds2, twh, wPay, weh, wePay, hoh, hoPay, overtimeTotal, tld, tldAmt, leaveBreakdown, th, totalPay, insAmt, netPay };
   }, [settings, records, leaveRecords]);
 
   const fm = (v: number) => `¥${v.toFixed(2)}`;
@@ -49,6 +49,14 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
           <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(summary.effBase)}</p>
           {summary.salaryMode === 'attendance' && <p className="text-xs text-muted-foreground mt-1">日薪 {fm(summary.ds2)} × {summary.effDays} 天</p>}
         </div>
+
+        {/* 奖金/绩效 */}
+        {summary.bonusAmount > 0 && (
+          <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+            <div className="flex items-center gap-2 mb-2 text-muted-foreground"><Gift className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">奖金/绩效</span></div>
+            <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(settings.bonusAmount)}</p>
+          </div>
+        )}
 
         {/* 平时加班 */}
         <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">

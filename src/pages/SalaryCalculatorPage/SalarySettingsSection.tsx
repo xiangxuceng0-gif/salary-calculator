@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings2, DollarSign, Clock, CalendarDays, Utensils, Star, Coffee, Eye, Shield, FileText } from 'lucide-react';
+import { Settings2, DollarSign, Clock, CalendarDays, Utensils, Star, Coffee, Eye, Shield, FileText, Gift, UserMinus } from 'lucide-react';
 import { type ISalarySettings, saveSettings, calcDailySalary } from '@/data/salary';
 import { Switch } from '@/components/ui/switch';
 
@@ -100,6 +100,63 @@ export default function SalarySettingsSection({ settings, onSettingsChange }: Sa
             <p className="text-xs text-muted-foreground">
               日薪 ¥{dailySalary.toFixed(2)}（底薪 ÷ {settings.standardDaysPerMonth}天）
             </p>
+          )}
+        </div>
+
+        {/* 奖金/绩效 */}
+        <div className="space-y-2">
+          <Label htmlFor="bonus" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground"><Gift className="size-3" />奖金/绩效（元）</Label>
+          <Input id="bonus" type="number" min="0" step="100" value={settings.bonusAmount || ''} onChange={(e) => updateSettings({ bonusAmount: parseFloat(e.target.value) || 0 })} placeholder="0" className="rounded-none border-2 border-border bg-background text-foreground h-11 text-sm font-bold focus-visible:ring-0 focus-visible:border-primary" />
+        </div>
+
+        {/* 模式 + 病假 + 五险一金 紧凑组合 */}
+        <div className="border-2 border-border bg-accent/20 p-4 space-y-3">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">模式与扣款</span>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">计算模式</Label>
+              <Select value={settings.workMode} onValueChange={(v) => updateSettings({ workMode: v as any })}>
+                <SelectTrigger className="h-9 text-xs rounded-none border-2 border-border bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-2 border-border bg-background">
+                  <SelectItem value="standard" className="text-xs">标准5天8小时</SelectItem>
+                  <SelectItem value="flex" className="text-xs">综合工时制</SelectItem>
+                  <SelectItem value="piecework" className="text-xs">计件模式</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">病假扣款</Label>
+              <Select value={String(settings.sickLeaveRate)} onValueChange={(v) => updateSettings({ sickLeaveRate: parseFloat(v) })}>
+                <SelectTrigger className="h-9 text-xs rounded-none border-2 border-border bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-2 border-border bg-background">
+                  <SelectItem value="1" className="text-xs">全扣100%</SelectItem>
+                  <SelectItem value="0.5" className="text-xs">扣50%</SelectItem>
+                  <SelectItem value="0.3" className="text-xs">扣30%</SelectItem>
+                  <SelectItem value="0" className="text-xs">不扣</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">五险一金</Label>
+              <Select value={settings.insuranceType} onValueChange={(v) => updateSettings({ insuranceType: v as any })}>
+                <SelectTrigger className="h-9 text-xs rounded-none border-2 border-border bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-2 border-border bg-background">
+                  <SelectItem value="none" className="text-xs">不缴纳</SelectItem>
+                  <SelectItem value="social" className="text-xs">仅五险</SelectItem>
+                  <SelectItem value="housing" className="text-xs">仅一金</SelectItem>
+                  <SelectItem value="both" className="text-xs">五险一金</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {(settings.insuranceType === 'social' || settings.insuranceType === 'both') && (
+            <Input type="number" min="0" step="10" value={settings.socialInsuranceAmount || ''} onChange={(e) => updateSettings({ socialInsuranceAmount: parseFloat(e.target.value) || 0 })} placeholder="五险金额" className="h-9 text-xs rounded-none border-2 border-border bg-background" />
+          )}
+          {(settings.insuranceType === 'housing' || settings.insuranceType === 'both') && (
+            <Input type="number" min="0" step="10" value={settings.housingFundAmount || ''} onChange={(e) => updateSettings({ housingFundAmount: parseFloat(e.target.value) || 0 })} placeholder="公积金金额" className="h-9 text-xs rounded-none border-2 border-border bg-background" />
+          )}
+          {settings.insuranceType !== 'none' && (
+            <p className="text-xs text-muted-foreground text-right">合计扣除 ¥{((settings.insuranceType === 'social' || settings.insuranceType === 'both' ? settings.socialInsuranceAmount : 0) + (settings.insuranceType === 'housing' || settings.insuranceType === 'both' ? settings.housingFundAmount : 0)).toFixed(2)}</p>
           )}
         </div>
 
@@ -200,75 +257,6 @@ export default function SalarySettingsSection({ settings, onSettingsChange }: Sa
             onCheckedChange={(v) => updateSettings({ showDailySalary: v })}
             className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-border"
           />
-        </div>
-
-        {/* 五险一金设置 */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            <Shield className="size-3" />
-            五险一金
-          </Label>
-          <Select
-            value={settings.insuranceType}
-            onValueChange={(v) => updateSettings({ insuranceType: v as 'none' | 'social' | 'housing' | 'both' })}
-          >
-            <SelectTrigger className="h-11 text-sm rounded-none border-2 border-border bg-background focus:ring-0 focus:border-primary uppercase tracking-wider font-bold">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-none border-2 border-border bg-background">
-              <SelectItem value="none" className="focus:bg-primary focus:text-black font-bold">
-                不缴纳
-              </SelectItem>
-              <SelectItem value="social" className="focus:bg-primary focus:text-black font-bold">
-                仅五险（社保）
-              </SelectItem>
-              <SelectItem value="housing" className="focus:bg-primary focus:text-black font-bold">
-                仅一金（公积金）
-              </SelectItem>
-              <SelectItem value="both" className="focus:bg-primary focus:text-black font-bold">
-                五险一金（都交）
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {(settings.insuranceType === 'social' || settings.insuranceType === 'both') && (
-            <div className="space-y-1.5">
-              <Label htmlFor="socialInsurance" className="text-xs text-muted-foreground">
-                五险（社保）月缴金额（元）
-              </Label>
-              <Input
-                id="socialInsurance"
-                type="number"
-                min="0"
-                step="10"
-                value={settings.socialInsuranceAmount || ''}
-                onChange={(e) => updateSettings({ socialInsuranceAmount: parseFloat(e.target.value) || 0 })}
-                placeholder="个人缴纳部分"
-                className="rounded-none border-2 border-border bg-background text-foreground h-11 text-sm font-bold focus-visible:ring-0 focus-visible:border-primary"
-              />
-            </div>
-          )}
-          {(settings.insuranceType === 'housing' || settings.insuranceType === 'both') && (
-            <div className="space-y-1.5">
-              <Label htmlFor="housingFund" className="text-xs text-muted-foreground">
-                公积金（一金）月缴金额（元）
-              </Label>
-              <Input
-                id="housingFund"
-                type="number"
-                min="0"
-                step="10"
-                value={settings.housingFundAmount || ''}
-                onChange={(e) => updateSettings({ housingFundAmount: parseFloat(e.target.value) || 0 })}
-                placeholder="个人缴纳部分"
-                className="rounded-none border-2 border-border bg-background text-foreground h-11 text-sm font-bold focus-visible:ring-0 focus-visible:border-primary"
-              />
-            </div>
-          )}
-          {settings.insuranceType !== 'none' && (
-            <p className="text-xs text-muted-foreground">
-              五险一金合计扣除 ¥{((settings.insuranceType === 'social' || settings.insuranceType === 'both' ? settings.socialInsuranceAmount : 0) + (settings.insuranceType === 'housing' || settings.insuranceType === 'both' ? settings.housingFundAmount : 0)).toFixed(2)}
-            </p>
-          )}
         </div>
 
         {/* 加班费率 */}

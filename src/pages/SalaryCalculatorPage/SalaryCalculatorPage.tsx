@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RotateCcw, CalendarPlus, Layers, Download, Upload, ClipboardList, Calculator, Settings2 } from 'lucide-react';
+import { RotateCcw, RotateCw, CalendarPlus, Layers, Download, Upload, ClipboardList, Calculator, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { type ISalarySettings, type IWorkRecord, type ILeaveRecord, type WorkMode, WORK_MODE_LABELS, DEFAULT_SETTINGS, loadSettings, saveSettings, loadRecords, saveRecords, loadLeaveRecords, saveLeaveRecords, getMonthKey, getMonthLabel, calcBreakDeductionMinutes, countWorkdayAttendance, exportAllData, importAllData } from '@/data/salary';
 import SalarySettingsSection from './SalarySettingsSection';
@@ -26,26 +26,29 @@ export default function SalaryCalculatorPage() {
   const handleRecordsChange = useCallback((next: IWorkRecord[]) => setRecords(next), []);
   const handleLeaveRecordsChange = useCallback((next: ILeaveRecord[]) => setLeaveRecords(next), []);
 
+  const [hasBackup, setHasBackup] = useState(() => !!localStorage.getItem('__jicai_backup'));
+
   const handleReset = useCallback(() => {
-    // 撤销备份
-    const backup = { settings: { ...settings }, records: [...records], leaveRecords: [...leaveRecords] };
-    const doReset = () => {
-      setSettings({ ...DEFAULT_SETTINGS }); setRecords([]); setLeaveRecords([]);
-      saveSettings({ ...DEFAULT_SETTINGS }); saveRecords([]); saveLeaveRecords([]);
-    };
-    doReset();
-    toast('数据已重置', {
-      action: {
-        label: '撤销',
-        onClick: () => {
-          setSettings(backup.settings); setRecords(backup.records); setLeaveRecords(backup.leaveRecords);
-          saveSettings(backup.settings); saveRecords(backup.records); saveLeaveRecords(backup.leaveRecords);
-          toast.success('已撤销重置');
-        },
-      },
-      duration: 8000,
-    });
+    // 自动备份
+    const backup = JSON.stringify({ settings, records, leaveRecords });
+    localStorage.setItem('__jicai_backup', backup);
+    setHasBackup(true);
+    setSettings({ ...DEFAULT_SETTINGS }); setRecords([]); setLeaveRecords([]);
+    saveSettings({ ...DEFAULT_SETTINGS }); saveRecords([]); saveLeaveRecords([]);
+    toast.success('数据已重置，可从顶栏恢复');
   }, [settings, records, leaveRecords]);
+
+  const handleRestore = useCallback(() => {
+    const raw = localStorage.getItem('__jicai_backup');
+    if (!raw) { toast.error('没有可恢复的备份'); return; }
+    try {
+      const { settings: s, records: r, leaveRecords: l } = JSON.parse(raw);
+      setSettings({ ...DEFAULT_SETTINGS, ...s }); setRecords(r); setLeaveRecords(l);
+      saveSettings({ ...DEFAULT_SETTINGS, ...s }); saveRecords(r); saveLeaveRecords(l);
+      localStorage.removeItem('__jicai_backup'); setHasBackup(false);
+      toast.success('已恢复上一份数据');
+    } catch { toast.error('备份数据损坏'); }
+  }, []);
 
   const handleExport = useCallback(() => {
     const json = exportAllData(); const blob = new Blob([json], { type: 'application/json' });
@@ -96,6 +99,7 @@ export default function SalaryCalculatorPage() {
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" onClick={handleExport} className="size-8 rounded-lg" title="导出"><Download className="size-4" /></Button>
           <Button variant="ghost" size="icon" onClick={handleImport} className="size-8 rounded-lg" title="导入"><Upload className="size-4" /></Button>
+          {hasBackup && <Button variant="ghost" size="icon" onClick={handleRestore} className="size-8 rounded-lg" title="恢复数据"><RotateCw className="size-4" /></Button>}
           <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-8 rounded-lg" title="重置"><RotateCcw className="size-4" /></Button></AlertDialogTrigger>
             <AlertDialogContent className="rounded-xl border bg-white shadow-lg"><AlertDialogHeader><AlertDialogTitle>确认重置？</AlertDialogTitle><AlertDialogDescription>清除所有数据恢复默认，8秒内可撤销</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-lg border text-sm">取消</AlertDialogCancel><AlertDialogAction onClick={handleReset} className="rounded-lg bg-primary text-white text-sm">确认重置</AlertDialogAction></AlertDialogFooter></AlertDialogContent>

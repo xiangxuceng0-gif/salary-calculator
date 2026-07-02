@@ -91,6 +91,7 @@ export default function SalaryCalculatorPage() {
               {(Object.entries(WORK_MODE_LABELS) as [WorkMode, string][]).map(([k, v]) => (<SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>))}
             </SelectContent>
           </Select>
+          <span className="text-xs text-muted-foreground ml-1">本月预估 <span className="font-semibold text-primary">¥{(filteredRecords.reduce((s,r)=>{const p=r.weekdayOvertimeHours*settings.weekdayOvertimeRate+r.weekendOvertimeHours*settings.weekendOvertimeRate+r.holidayOvertimeHours*settings.holidayOvertimeRate;return s+p},0)+settings.baseSalary-filteredLeaveRecords.reduce((s,l)=>s+l.deductionAmount,0)).toFixed(0)}</span></span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" onClick={handleExport} className="size-8 rounded-lg" title="导出"><Download className="size-4" /></Button>

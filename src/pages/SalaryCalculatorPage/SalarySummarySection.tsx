@@ -34,14 +34,14 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
   const fh = (v: number) => `${v.toFixed(1)}h`;
 
   return (
-    <Card className="border-2 border-border bg-background rounded-none h-full">
+    <Card className="border bg-white rounded-none h-full">
       <CardHeader className="pb-3 border-b-2 border-border">
         <CardTitle className="text-sm font-bold uppercase tracking-wider">工资汇总</CardTitle>
       </CardHeader>
       <CardContent className="p-6 space-y-3">
 
         {/* 底薪 */}
-        <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+        <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground">
             <Wallet className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">底薪</span>
             {summary.salaryMode === 'attendance' && <span className="text-xs ml-auto">出勤 {summary.effDays} 天</span>}
@@ -52,14 +52,14 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
 
         {/* 奖金/绩效 */}
         {summary.bonusAmount > 0 && (
-          <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+          <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
             <div className="flex items-center gap-2 mb-2 text-muted-foreground"><Gift className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">奖金/绩效</span></div>
             <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(settings.bonusAmount)}</p>
           </div>
         )}
 
         {/* 平时加班 */}
-        <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+        <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground"><Clock className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">平时加班</span></div>
           <div className="flex items-baseline justify-between">
             <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(summary.wPay)}</p>
@@ -68,7 +68,7 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
         </div>
 
         {/* 周末加班 */}
-        <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+        <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground"><CalendarDays className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">周末加班</span></div>
           <div className="flex items-baseline justify-between">
             <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(summary.wePay)}</p>
@@ -77,7 +77,7 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
         </div>
 
         {/* 节假日加班 */}
-        <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+        <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground"><Star className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">节假日加班</span></div>
           <div className="flex items-baseline justify-between">
             <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fm(summary.hoPay)}</p>
@@ -110,7 +110,7 @@ export default function SalarySummarySection({ settings, records, leaveRecords }
         )}
 
         {/* 总工时（含加班明细） */}
-        <div className="border-2 border-border bg-background p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
+        <div className="border bg-white p-4 transition-all duration-300 hover:bg-primary hover:text-black hover:border-primary">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground"><Zap className="size-4" /><span className="text-xs font-bold uppercase tracking-widest">总工时</span></div>
           <p className="text-2xl font-bold tabular-nums tracking-tighter text-foreground">{fh(summary.th)}</p>
           <div className="mt-2 space-y-0.5 text-xs text-muted-foreground border-t border-border/30 pt-2">

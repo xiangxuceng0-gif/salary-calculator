@@ -74,6 +74,11 @@ export default function SalarySettingsSection({ settings, onSettingsChange }: Sa
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 p-6">
+        {/* 主题切换 */}
+        <div className="flex items-center justify-between bg-muted/50 rounded-xl p-3">
+          <div><p className="text-sm font-medium">深色模式</p><p className="text-xs text-muted-foreground">切换浅色/深色主题</p></div>
+          <Switch checked={document.documentElement.classList.contains('dark')} onCheckedChange={(v) => { document.documentElement.classList.toggle('dark', v); localStorage.setItem('__jicai_theme', v ? 'dark' : 'light'); }} />
+        </div>
         {/* 底薪 */}
         <div className="space-y-2">
           <Label htmlFor="baseSalary" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">

@@ -22,6 +22,16 @@ export default function SalaryCalculatorPage() {
   useEffect(() => { saveRecords(records); }, [records]);
   useEffect(() => { saveLeaveRecords(leaveRecords); }, [leaveRecords]);
 
+  // 自动备份：每次数据变化后3秒静默备份
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const backup = JSON.stringify({ settings, records, leaveRecords });
+      localStorage.setItem('__jicai_backup', backup);
+      setHasBackup(true);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [settings, records, leaveRecords]);
+
   const handleSettingsChange = useCallback((next: ISalarySettings) => setSettings(next), []);
   const handleRecordsChange = useCallback((next: IWorkRecord[]) => setRecords(next), []);
   const handleLeaveRecordsChange = useCallback((next: ILeaveRecord[]) => setLeaveRecords(next), []);
@@ -57,8 +67,8 @@ export default function SalaryCalculatorPage() {
       const { settings: s, records: r, leaveRecords: l } = JSON.parse(raw);
       setSettings({ ...DEFAULT_SETTINGS, ...s }); setRecords(r); setLeaveRecords(l);
       saveSettings({ ...DEFAULT_SETTINGS, ...s }); saveRecords(r); saveLeaveRecords(l);
-      localStorage.removeItem('__jicai_backup'); setHasBackup(false);
       toast.success('已恢复上一份数据');
+      // 恢复后保留备份（防止再次误操作）
     } catch { toast.error('备份数据损坏'); }
   }, []);
 

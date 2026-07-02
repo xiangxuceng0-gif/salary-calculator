@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw, RotateCw, CalendarPlus, Layers, Download, Upload, ClipboardList, Calculator, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { type ISalarySettings, type IWorkRecord, type ILeaveRecord, type WorkMode, WORK_MODE_LABELS, DEFAULT_SETTINGS, loadSettings, saveSettings, loadRecords, saveRecords, loadLeaveRecords, saveLeaveRecords, getMonthKey, getMonthLabel, calcBreakDeductionMinutes, countWorkdayAttendance, exportAllData, importAllData } from '@/data/salary';
+import { type ISalarySettings, type IWorkRecord, type ILeaveRecord, type WorkMode, WORK_MODE_LABELS, DEFAULT_SETTINGS, loadSettings, saveSettings, loadRecords, saveRecords, loadLeaveRecords, saveLeaveRecords, getMonthKey, getMonthLabel, calcBreakDeductionMinutes, calcDailySalary, countWorkdayAttendance, exportAllData, importAllData } from '@/data/salary';
 import SalarySettingsSection from './SalarySettingsSection';
 import WorkRecordSection from './WorkRecordSection';
 import SalarySummarySection from './SalarySummarySection';

@@ -22,9 +22,10 @@ export default function SalaryCalculatorPage() {
   useEffect(() => { saveRecords(records); }, [records]);
   useEffect(() => { saveLeaveRecords(leaveRecords); }, [leaveRecords]);
 
-  // 自动备份：每次数据变化后3秒静默备份
+  // 自动备份：每次数据变化后3秒静默备份（有数据才备）
   useEffect(() => {
     const t = setTimeout(() => {
+      if (records.length === 0 && leaveRecords.length === 0) return; // 空数据不覆盖备份
       const backup = JSON.stringify({ settings, records, leaveRecords });
       localStorage.setItem('__jicai_backup', backup);
       setHasBackup(true);

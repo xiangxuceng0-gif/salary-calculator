@@ -27,10 +27,25 @@ export default function SalaryCalculatorPage() {
   const handleLeaveRecordsChange = useCallback((next: ILeaveRecord[]) => setLeaveRecords(next), []);
 
   const handleReset = useCallback(() => {
-    setSettings({ ...DEFAULT_SETTINGS }); setRecords([]); setLeaveRecords([]);
-    saveSettings({ ...DEFAULT_SETTINGS }); saveRecords([]); saveLeaveRecords([]);
-    toast.success('数据已重置');
-  }, []);
+    // 撤销备份
+    const backup = { settings: { ...settings }, records: [...records], leaveRecords: [...leaveRecords] };
+    const doReset = () => {
+      setSettings({ ...DEFAULT_SETTINGS }); setRecords([]); setLeaveRecords([]);
+      saveSettings({ ...DEFAULT_SETTINGS }); saveRecords([]); saveLeaveRecords([]);
+    };
+    doReset();
+    toast('数据已重置', {
+      action: {
+        label: '撤销',
+        onClick: () => {
+          setSettings(backup.settings); setRecords(backup.records); setLeaveRecords(backup.leaveRecords);
+          saveSettings(backup.settings); saveRecords(backup.records); saveLeaveRecords(backup.leaveRecords);
+          toast.success('已撤销重置');
+        },
+      },
+      duration: 8000,
+    });
+  }, [settings, records, leaveRecords]);
 
   const handleExport = useCallback(() => {
     const json = exportAllData(); const blob = new Blob([json], { type: 'application/json' });
@@ -67,31 +82,31 @@ export default function SalaryCalculatorPage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* 顶部栏 */}
-      <header className="sticky top-0 z-10 bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between gap-2">
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-lg font-bold tracking-tighter shrink-0">记财</h1>
+          <h1 className="text-lg font-semibold tracking-tight shrink-0">记财</h1>
           <Select value={settings.workMode} onValueChange={handleModeChange}>
-            <SelectTrigger className="h-8 text-xs rounded-none border-2 border-border bg-background w-36"><SelectValue /></SelectTrigger>
-            <SelectContent className="rounded-none border-2 border-border bg-background">
+            <SelectTrigger className="h-8 text-xs rounded-lg border bg-white w-36 shadow-none"><SelectValue /></SelectTrigger>
+            <SelectContent className="rounded-lg border bg-white shadow-md">
               {(Object.entries(WORK_MODE_LABELS) as [WorkMode, string][]).map(([k, v]) => (<SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" onClick={handleExport} className="size-8 rounded-none" title="导出"><Download className="size-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={handleImport} className="size-8 rounded-none" title="导入"><Upload className="size-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={handleExport} className="size-8 rounded-lg" title="导出"><Download className="size-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={handleImport} className="size-8 rounded-lg" title="导入"><Upload className="size-4" /></Button>
           <AlertDialog>
-            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-8 rounded-none" title="重置"><RotateCcw className="size-4" /></Button></AlertDialogTrigger>
-            <AlertDialogContent className="rounded-none border-2 border-border bg-background"><AlertDialogHeader><AlertDialogTitle>确认重置？</AlertDialogTitle><AlertDialogDescription>清除所有数据，恢复默认状态。不可撤销。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-none border-2 border-border text-xs font-bold">取消</AlertDialogCancel><AlertDialogAction onClick={handleReset} className="rounded-none bg-primary text-black text-xs font-bold">确认重置</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-8 rounded-lg" title="重置"><RotateCcw className="size-4" /></Button></AlertDialogTrigger>
+            <AlertDialogContent className="rounded-xl border bg-white shadow-lg"><AlertDialogHeader><AlertDialogTitle>确认重置？</AlertDialogTitle><AlertDialogDescription>清除所有数据恢复默认，8秒内可撤销</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-lg border text-sm">取消</AlertDialogCancel><AlertDialogAction onClick={handleReset} className="rounded-lg bg-primary text-white text-sm">确认重置</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
           </AlertDialog>
         </div>
       </header>
 
       {/* 月份筛选条 */}
-      <div className="px-4 py-2 border-b border-border/50 flex items-center gap-2 bg-accent/10">
+      <div className="px-4 py-2 border-b border-border flex items-center gap-2 bg-white/50">
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="h-8 text-xs rounded-none border-2 border-border bg-background w-40"><SelectValue placeholder="全部月份" /></SelectTrigger>
-          <SelectContent className="rounded-none border-2 border-border bg-background">
+          <SelectTrigger className="h-8 text-xs rounded-lg border bg-white w-40 shadow-none"><SelectValue placeholder="全部月份" /></SelectTrigger>
+          <SelectContent className="rounded-lg border bg-white shadow-md">
             <SelectItem value="all" className="text-xs">全部月份</SelectItem>
             {availableMonths.map((mk) => { const s = monthStats.get(mk); return (<SelectItem key={mk} value={mk} className="text-xs">{getMonthLabel(mk)}{s && <span className="ml-1 opacity-50"> 上{s.workDays}请{s.leaveDays}</span>}</SelectItem>); })}
           </SelectContent>
@@ -113,12 +128,12 @@ export default function SalaryCalculatorPage() {
       </div>
 
       {/* 底部Tab导航 */}
-      <nav className="sticky bottom-0 z-10 bg-background border-t-2 border-border flex">
+      <nav className="sticky bottom-0 z-10 bg-white/80 backdrop-blur border-t border-border flex safe-area-bottom">
         {tabs.map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${activeTab === tab.key ? 'text-primary border-t-2 border-primary -mt-[2px]' : 'text-muted-foreground hover:text-foreground'}`}>
+            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${activeTab === tab.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
             {tab.icon}
-            <span className="text-[10px] font-bold uppercase tracking-wider">{tab.label}</span>
+            <span className="text-[11px] font-medium">{tab.label}</span>
           </button>
         ))}
       </nav>

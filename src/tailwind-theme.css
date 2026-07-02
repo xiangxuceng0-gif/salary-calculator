@@ -1,80 +1,65 @@
 :root {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-
-  --opaque-button-border-intensity: -8;
-
-  --elevate-1: rgba(255,255,255, .03);
-  --elevate-2: rgba(255,255,255, .08);
-
-  --background: hsl(240 6% 3%);
-  --foreground: hsl(0 0% 98%);
-  --card: hsl(240 6% 3%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(240 6% 3%);
-  --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(61 97% 45%);
-  --primary-foreground: hsl(0 0% 0%);
-  --secondary: hsl(240 4% 16%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(240 4% 16%);
-  --muted-foreground: hsl(240 4% 66%);
-  --accent: hsl(240 4% 16%);
-  --accent-foreground: hsl(0 0% 98%);
-  --info: hsl(189 94% 43%);
-  --info-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 84% 60%);
-  --destructive-foreground: hsl(0 0% 98%);
-  --success: hsl(61 97% 45%);
-  --success-foreground: hsl(0 0% 0%);
-  --warning: hsl(25 95% 53%);
-  --warning-foreground: hsl(0 0% 0%);
-  --border: hsl(240 5% 26%);
-  --input: hsl(240 5% 26%);
-  --ring: hsl(61 97% 45%);
-  --chart-1: hsl(61 97% 45%);
-  --chart-2: hsl(0 0% 98%);
-  --chart-3: hsl(189 94% 43%);
-  --chart-4: hsl(330 81% 60%);
+  --background: hsl(0 0% 96%);
+  --foreground: hsl(220 8% 12%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 8% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 8% 12%);
+  --primary: hsl(224 100% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(220 8% 95%);
+  --secondary-foreground: hsl(220 8% 12%);
+  --muted: hsl(220 8% 95%);
+  --muted-foreground: hsl(220 5% 45%);
+  --accent: hsl(224 100% 97%);
+  --accent-foreground: hsl(224 100% 40%);
+  --info: hsl(224 100% 60%);
+  --info-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(154 80% 36%);
+  --success-foreground: hsl(0 0% 100%);
+  --warning: hsl(30 100% 55%);
+  --warning-foreground: hsl(0 0% 100%);
+  --border: hsl(220 8% 90%);
+  --input: hsl(220 8% 90%);
+  --ring: hsl(224 100% 60%);
+  --chart-1: hsl(224 100% 60%);
+  --chart-2: hsl(154 80% 36%);
+  --chart-3: hsl(30 100% 55%);
+  --chart-4: hsl(0 84% 55%);
   --chart-5: hsl(262 83% 66%);
-  --sidebar: hsl(240 6% 3%);
-  --sidebar-foreground: hsl(0 0% 98%);
-  --sidebar-primary: hsl(61 97% 45%);
-  --sidebar-primary-foreground: hsl(0 0% 0%);
-  --sidebar-accent: hsl(240 4% 16%);
-  --sidebar-accent-foreground: hsl(0 0% 98%);
-  --sidebar-border: hsl(240 5% 26%);
-  --sidebar-ring: hsl(61 97% 45%);
+  --sidebar: hsl(0 0% 100%);
+  --sidebar-foreground: hsl(220 8% 12%);
+  --sidebar-primary: hsl(224 100% 60%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(224 100% 97%);
+  --sidebar-accent-foreground: hsl(224 100% 40%);
+  --sidebar-border: hsl(220 8% 90%);
+  --sidebar-ring: hsl(224 100% 60%);
 
-  --primary-border: hsl(from hsl(61 97% 45%) h s calc(l + var(--opaque-button-border-intensity)));
-  --secondary-border: hsl(from hsl(240 4% 16%) h s calc(l + var(--opaque-button-border-intensity)));
-  --destructive-border: hsl(from hsl(0 84% 60%) h s calc(l + var(--opaque-button-border-intensity)));
-  --accent-border: hsl(from hsl(240 4% 16%) h s calc(l + var(--opaque-button-border-intensity)));
-  --muted-border: hsl(from hsl(240 4% 16%) h s calc(l + var(--opaque-button-border-intensity)));
-  --font-sans:
-    'Space Grotesk', 'Noto Sans SC', 'LarkHackSafariFont', 'LarkEmojiFont', 'LarkChineseQuote', '-apple-system',
-    'BlinkMacSystemFont', 'Helvetica Neue', 'Tahoma', 'PingFang SC',
-    'Microsoft Yahei', 'Arial', 'Hiragino Sans GB', 'sans-serif',
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-serif:
-    'Geist', 'Geist Fallback', ui-serif, Georgia, Cambria, 'Times New Roman',
-    Times, serif;
-  --font-mono: Source Code Pro, monospace;
-  --radius: 0rem;
-  --shadow-x: 0px;
-  --shadow-y: 0px;
-  --shadow-blur: 0px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0;
-  --shadow-color: #000000;
-  --shadow-2xs: none;
-  --shadow-xs: none;
-  --shadow-sm: none;
-  --shadow: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --shadow-xl: none;
-  --shadow-2xl: none;
+  --primary-border: hsl(224 100% 50%);
+  --secondary-border: hsl(220 8% 85%);
+  --destructive-border: hsl(0 84% 45%);
+  --accent-border: hsl(224 100% 85%);
+  --muted-border: hsl(220 8% 85%);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  --radius: 0.625rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,.03);
+  --shadow-xs: 0 1px 3px 0 rgba(0,0,0,.04);
+  --shadow-sm: 0 2px 8px 0 rgba(0,0,0,.06);
+  --shadow: 0 4px 16px 0 rgba(0,0,0,.08);
+  --shadow-md: 0 8px 24px 0 rgba(0,0,0,.10);
+  --shadow-lg: 0 12px 32px 0 rgba(0,0,0,.12);
+  --shadow-xl: 0 16px 48px 0 rgba(0,0,0,.16);
+  --shadow-2xl: 0 24px 64px 0 rgba(0,0,0,.20);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 }
@@ -118,16 +103,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-
-  --font-sans: 'Space Grotesk', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
-
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
   --shadow-2xs: var(--shadow-2xs);
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
@@ -136,75 +118,4 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
-}
-
-@layer utilities {
-  input[type="search"]::-webkit-search-cancel-button {
-    @apply hidden;
-  }
-
-  [contenteditable][data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: var(--muted-foreground);
-    pointer-events: none;
-  }
-
-  .no-default-hover-elevate {}
-  .no-default-active-elevate {}
-
-  .toggle-elevate::before,
-  .toggle-elevate-2::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    border-radius: inherit;
-    z-index: -1;
-  }
-
-  .toggle-elevate.toggle-elevated::before {
-    background-color: var(--elevate-2);
-  }
-
-  .border.toggle-elevate::before {
-    inset: -1px;
-  }
-
-  :where(.hover-elevate:not(.no-default-hover-elevate)),
-  :where(.active-elevate:not(.no-default-active-elevate)),
-  :where(.hover-elevate-2:not(.no-default-hover-elevate)),
-  :where(.active-elevate-2:not(.no-default-active-elevate)) {
-    position: relative;
-    z-index: 0;
-  }
-
-  .hover-elevate:not(.no-default-hover-elevate)::after,
-  .active-elevate:not(.no-default-active-elevate)::after,
-  .hover-elevate-2:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:not(.no-default-active-elevate)::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    border-radius: inherit;
-    z-index: 999;
-  }
-
-  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-1);
-  }
-
-  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-2);
-  }
-
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
-    inset: -1px;
-  }
 }

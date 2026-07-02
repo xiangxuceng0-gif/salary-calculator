@@ -26,7 +26,19 @@ export default function SalaryCalculatorPage() {
   const handleRecordsChange = useCallback((next: IWorkRecord[]) => setRecords(next), []);
   const handleLeaveRecordsChange = useCallback((next: ILeaveRecord[]) => setLeaveRecords(next), []);
 
-  const [hasBackup, setHasBackup] = useState(() => !!localStorage.getItem('__jicai_backup'));
+  const [hasBackup, setHasBackup] = useState(true); // 始终检查：localStorage中有备份就显示
+
+  // 启动时检查备份
+  useEffect(() => { setHasBackup(!!localStorage.getItem('__jicai_backup')); }, []);
+
+  const monthTotal = useMemo(() => {
+    const monthRecords = selectedMonth === 'all' ? records : records.filter((r) => getMonthKey(r.date) === selectedMonth);
+    const monthLeaves = selectedMonth === 'all' ? leaveRecords : leaveRecords.filter((l) => getMonthKey(l.date) === selectedMonth);
+    const ot = monthRecords.reduce((s,r) => s + r.weekdayOvertimeHours*settings.weekdayOvertimeRate + r.weekendOvertimeHours*settings.weekendOvertimeRate + r.holidayOvertimeHours*settings.holidayOvertimeRate, 0);
+    const ld = monthLeaves.reduce((s,l) => Math.round((s + l.deductionAmount) * 100) / 100, 0);
+    const effBase = settings.salaryMode === 'attendance' ? Math.round(calcDailySalary(settings.baseSalary, settings.standardDaysPerMonth) * (settings.customAttendanceDays > 0 ? settings.customAttendanceDays : countWorkdayAttendance(monthRecords)) * 100) / 100 : settings.baseSalary;
+    return effBase + ot - ld;
+  }, [settings, records, leaveRecords, selectedMonth]);
 
   const handleReset = useCallback(() => {
     // 自动备份
@@ -94,12 +106,12 @@ export default function SalaryCalculatorPage() {
               {(Object.entries(WORK_MODE_LABELS) as [WorkMode, string][]).map(([k, v]) => (<SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>))}
             </SelectContent>
           </Select>
-          <span className="text-xs text-muted-foreground ml-1">本月预估 <span className="font-semibold text-primary">¥{(filteredRecords.reduce((s,r)=>{const p=r.weekdayOvertimeHours*settings.weekdayOvertimeRate+r.weekendOvertimeHours*settings.weekendOvertimeRate+r.holidayOvertimeHours*settings.holidayOvertimeRate;return s+p},0)+settings.baseSalary-filteredLeaveRecords.reduce((s,l)=>s+l.deductionAmount,0)).toFixed(0)}</span></span>
+          <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">{selectedMonth === 'all' ? '全部月份' : getMonthLabel(selectedMonth)}预估 <span className="font-semibold text-primary">¥{monthTotal.toFixed(0)}</span></span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" onClick={handleExport} className="size-8 rounded-lg" title="导出"><Download className="size-4" /></Button>
           <Button variant="ghost" size="icon" onClick={handleImport} className="size-8 rounded-lg" title="导入"><Upload className="size-4" /></Button>
-          {hasBackup && <Button variant="ghost" size="icon" onClick={handleRestore} className="size-8 rounded-lg" title="恢复数据"><RotateCw className="size-4" /></Button>}
+          <Button variant="ghost" size="icon" onClick={handleRestore} disabled={!hasBackup} className={`size-8 rounded-lg ${!hasBackup ? 'opacity-20 cursor-not-allowed' : ''}`} title={hasBackup ? '恢复数据' : '无备份'}><RotateCw className="size-4" /></Button>
           <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-8 rounded-lg" title="重置"><RotateCcw className="size-4" /></Button></AlertDialogTrigger>
             <AlertDialogContent className="rounded-xl border bg-white shadow-lg"><AlertDialogHeader><AlertDialogTitle>确认重置？</AlertDialogTitle><AlertDialogDescription>清除所有数据恢复默认，8秒内可撤销</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="rounded-lg border text-sm">取消</AlertDialogCancel><AlertDialogAction onClick={handleReset} className="rounded-lg bg-primary text-white text-sm">确认重置</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
